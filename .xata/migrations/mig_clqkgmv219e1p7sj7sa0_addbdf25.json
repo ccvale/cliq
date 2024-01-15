@@ -1,0 +1,18 @@
+{
+  "id": "mig_clqkgmv219e1p7sj7sa0",
+  "parentID": "mig_clqkgk7219e1p7sj7s90",
+  "checksum": "1:addbdf2535baedbf39b390b4f790f2e4dc1a04cb32aa3f2351a353476d8f2a8c",
+  "operations": [
+    {
+      "addColumn": {
+        "column": {
+          "name": "userId",
+          "type": "string",
+          "notNull": true,
+          "defaultValue": "null"
+        },
+        "table": "Users"
+      }
+    }
+  ]
+}

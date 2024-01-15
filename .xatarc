@@ -1,0 +1,6 @@
+{
+  "databaseURL": "https://Chris-Valente-s-workspace-18lhf4.us-east-1.xata.sh/db/click",
+  "codegen": {
+    "output": "src/xata.ts"
+  }
+}
