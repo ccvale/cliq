@@ -4,7 +4,7 @@
 
 The main concept of **Cliq** (stylistically for Click), was to create a matchmaking web application that serves as an easy way for users to make platonic matches with other users on the platform. Apps such as Tinder and Hinge have proven to be extremely effective, but begs one to ask the question, "If we can use these swipe apps to find quick intimate connections, why not use them to make platonic ones as well?" On Cliq, users are able to create and customize their own profile, and tailor it accordingly to their individual likes and interests. Users will ultimately view a familiarly structured queue of profiles, while belong to other users (within a user specified radius), and can swipe right (to like the profile) or left (to ignore the profile) with the hopes of making matches with users with similar interests. When a match is made, the two users will be allowed to connect and communicate within the app, using a chat feature, where hopefully these matches will cultivate friendships; or in other words, hopefully, they *click*.
 
-## Expected Primary Features
+## Default Features for Proof of Concept
 
 This project is ambitious, and will hopefully have a lot of additional exciting features that realize themselves throughout production. These features cannot be foreseen, but those that will definitely play a key role in Cliq’s primary functionality would be as follows:
 
