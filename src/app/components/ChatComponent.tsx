@@ -37,7 +37,7 @@ export default function ChatComponent({ sessionUser, userDetails }: Props) {
         <div className="flex h-screen">
             {/* Left panel */}
             <div className="w-2/3 bg-gray-100 border-r border-gray-300 p-4 overflow-y-auto">
-                <h1 className="text-xl font-semibold mb-4">Chats <span className="italic text-sm">- First impressions are everything...don't leave anything unsaid!</span></h1>
+                <h1 className="text-xl font-semibold mb-4">Chats <span className="italic text-sm">- First impressions are everything...don&apos;t leave anything unsaid!</span></h1>
                 <div>
                     {userDetails.length > 0 ? (
                         userDetails.map((match, index) => (
