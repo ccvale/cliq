@@ -8,8 +8,8 @@ export default async function Chat() {
 
     const sessionUserRaw = await xataClient.db.Users.filter({ 'userId': user?.id }).getFirst();
     const sessionUser = { ...sessionUserRaw };
-    
-    let userDetails = [];
+
+    let userDetails: { userId: string; displayName: string; imageUrl: string; }[] = [];
 
     if (sessionUser?.matches) {
         userDetails = sessionUser.matches.map(match => {
