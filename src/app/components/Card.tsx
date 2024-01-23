@@ -235,11 +235,11 @@ function UserCard({ user, distanceTag }) {
                 <BriefcaseIcon className="h-5 w-5 mr-2" />
                 <h3>{user.job_position} at {user.job_company}</h3>
             </div>
-            <div className="flex-grow mt-4">
+            <div className="flex-grow">
                 <h3>Interests</h3>
-                <ul className="flex flex-row justify-center items-center gap-5 mx-auto">
+                <ul className="flex flex-row justify-center items-center gap-5 mx-auto py-2">
                     {[user.primary_interest, user.secondary_interest, user.third_interest]?.map((interest) => (
-                        <li key={interest} className="list-none">{interest}</li>
+                        <li key={interest} className="bg-white bg-opacity-40 rounded-full py-1 px-4">{interest}</li>
                     ))}
                 </ul>
             </div>

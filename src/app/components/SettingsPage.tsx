@@ -149,13 +149,13 @@ return (
             <form onSubmit={handleSubmit} className="mt-0 max-w-5xl max-h-[80vh] overflow-y-auto bg-gradient-to-r from-pink-300 to-indigo-400 text-white rounded-xl p-10 flex flex-col justify-start items-center mx-auto mb-10 drop-shadow-lg text-center font-semibold">
                 <h1 className="text-4xl mb-4 -mt-5">User Settings <span className="italic text-lg">Let everyone know who you are!</span></h1>
                 <div className="w-full mb-4">
-                    <label className="block text-xl mb-2">Display Name <span className="italic text-sm">- How you want others to see your name</span>
+                    <label className="block text-xl mb-2">Display Name <span className="italic text-sm">- How you want to introduce yourself</span>
                         <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="text-sm text-indigo-400 w-full p-2 rounded" />
                     </label>
                 </div>
 
                 <div className="w-full mb-4">
-                    <label className="block text-xl mb-2">Bio <span className="italic text-sm">- First impressions are everything...leave it all out there</span>
+                    <label className="block text-xl mb-2">Bio <span className="italic text-sm">- What do you want others to know about you?</span>
                         <input type="text" value={bio} onChange={(e) => setBio(e.target.value)} className="text-sm text-indigo-400 w-full p-2 rounded h-20" />
                     </label>
                 </div>
@@ -293,7 +293,7 @@ return (
                         </label>
                     </div>
                     
-                <button type="submit" className="text-xl bg-gray-50 text-indigo-400 px-4 py-2 rounded-lg hover:bg-gray-100 mt-4">
+                <button type="submit" className="text-xl bg-gray-50 text-indigo-400 px-4 py-2 rounded-lg hover:bg-gray-100 -mt-3">
                     Update Profile
                 </button>
             </form>

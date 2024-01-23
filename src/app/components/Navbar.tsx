@@ -17,7 +17,9 @@ export default function Navbar() {
         <nav className="flex justify-between items-center py-6 font-bold w-4/5 mx-auto bg-white">
             <h1 className="text-2xl">
                 <Link href="/">
-                    <Image src={nextLogo} width={90} height={100} alt="Click logo" />
+                    <div className="cursor-pointer hover:-translate-y-1 transition-transform duration-300">
+                        <Image src={nextLogo} width={90} height={100} alt="Cliq logo" />
+                    </div>
                 </Link>
             </h1>
             <div className="flex gap-4 items-center">
