@@ -22,9 +22,9 @@ const nextConfig = {
             },
             {
                 protocol: 'https',
-                hostname: 'placekitten.com',
+                hostname: 'img.clerk.com',
                 port: '',
-                pathname: '/500/**',
+                pathname: '/**',
             }
         ],
     },

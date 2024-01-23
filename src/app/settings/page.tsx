@@ -9,11 +9,9 @@ import { revalidatePath } from 'next/cache';
 
 export default async function Settings() {
   const { userId } = auth();
-  console.log(userId);
-    const xataClient = getXataClient();
+  const xataClient = getXataClient();
   const fetchedUser = await xataClient.db.Users.filter({ 'userId': userId }).getFirst();
   
-  console.log(fetchedUser);
     
     if (!fetchedUser) {
         await xataClient.db.Users.create({userId});

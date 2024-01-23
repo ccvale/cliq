@@ -40,7 +40,9 @@ const tables = [
       { name: "secondary_palette", type: "string", defaultValue: "Cyan" },
       { name: "display_name", type: "string", defaultValue: "Nameless" },
       { name: "gender", type: "string", defaultValue: "Male" },
-      {name: "matches", type: "multiple"}
+      { name: "matches", type: "multiple" },
+      { name: "likes", type: "multiple" }
+
     ],
   },
 ] as const;

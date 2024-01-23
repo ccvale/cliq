@@ -1,4 +1,4 @@
-# Click - making friends has never been easier
+# Cliq - making friends has never been easier
 
 ## Project Overview
 

@@ -1,5 +1,7 @@
 export default async function updateUser(url: string, data: any) {
 
+    // this is the working version
+
     const id = data['arg']['id'];
     delete data['arg']['id'];
 

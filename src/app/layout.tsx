@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body className="flex flex-col min-h-screen">
+        <body className="flex flex-col min-h-screen overflow-hidden">
           <Navbar />
           <main className="flex flex-col grow">
             {children}

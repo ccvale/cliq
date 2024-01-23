@@ -1,44 +1,24 @@
-'use client'
-import React, { useState } from 'react';
+import { getXataClient } from "@/xata";
+import { currentUser } from "@clerk/nextjs";
+import ChatComponent from "../components/ChatComponent";
 
-const ChatPage = () => {
-    const [currentChat, setCurrentChat] = useState(null);
-    const chats = []; // Array of chat previews. Populate this with real data.
+export default async function Chat() {
+    const xataClient = getXataClient();
+    const user = await currentUser();
+
+    const sessionUserRaw = await xataClient.db.Users.filter({ 'userId': user?.id }).getFirst();
+    const sessionUser = { ...sessionUserRaw };
+    
+    let userDetails = [];
+
+    if (sessionUser?.matches) {
+        userDetails = sessionUser.matches.map(match => {
+            const [userId, displayName, imageUrl] = match.split(' - ');
+            return { userId, displayName, imageUrl };
+        });
+    }
 
     return (
-        <div className="flex h-screen bg-gray-200">
-            {/* Chat Previews */}
-            <div className="w-1/3 bg-white overflow-y-auto">
-                {chats.length > 0 ? (
-                    chats.map((chat, index) => (
-                        <div
-                            key={index}
-                            className="p-4 hover:bg-gray-100 cursor-pointer"
-                            onClick={() => setCurrentChat(chat)}
-                        >
-                            {/* Render chat preview here */}
-                            Chat {chat.id}
-                        </div>
-                    ))
-                ) : (
-                    <div className="p-4">No chats available</div>
-                )}
-            </div>
-
-            {/* Chat Display */}
-            <div className="w-2/3 bg-gray-100 flex items-center justify-center">
-                {currentChat ? (
-                    <div>
-                        {/* Chat content goes here */}
-                        <h1 className="text-lg font-bold">Chat with {currentChat.id}</h1>
-                        {/* Render messages */}
-                    </div>
-                ) : (
-                    <div className="text-lg text-gray-600">Select a chat to start</div>
-                )}
-            </div>
-        </div>
+        <ChatComponent sessionUser={sessionUser} userDetails={userDetails} />
     );
-};
-
-export default ChatPage;
+}

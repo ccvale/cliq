@@ -1,181 +1,259 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
-import TinderCard from 'react-tinder-card'
-import { onSwipe } from '@/lib/onSwipe'
-import { onCardLeftScreen } from '@/lib/onCardLeftScreen'
-import { User } from '../../../types'
-import Image from 'next/image'
-import GlobeAltIcon from '@heroicons/react/24/outline/esm/GlobeAltIcon' // location
-import BriefcaseIcon from '@heroicons/react/24/outline/esm/BriefcaseIcon' // position
-import haversine from 'haversine-distance'
-import geocoding from '@/lib/geocoding'
-import { generateRandomUser } from '@/lib/generateRandomUser'
+import React, { useEffect, useState } from 'react';
+import TinderCard from 'react-tinder-card';
+import { User } from '../../../types';
+import Image from 'next/image';
+import GlobeAltIcon from '@heroicons/react/24/outline/esm/GlobeAltIcon'; // location
+import BriefcaseIcon from '@heroicons/react/24/outline/esm/BriefcaseIcon'; // position
+import haversine from 'haversine-distance';
+import geocoding from '@/lib/geocoding';
+import { getFilteredUsers } from '@/lib/getFilteredUsers';
+import { clerkClient } from '@clerk/nextjs';
+import useSWRMutation from 'swr/mutation';
+import updateUser from '@/lib/updateUser';
 
-
-// TODO: add in icons for each different section (i.e. location, position) -> https://heroicons.com/ and import them
-// TODO: or, look into using a different library for the cards (like from the tutorial?)
-// TODO: we also want to replace the buttons in the dashboard page with icons, spread them out, and make them bigger
 
 type Props = {
-    params: {
-        user: User,
-    }
+    sessionUser: any,
+    filteredUsers: any // its an array of JSON objects
 }
 
-const from: { [key: string]: string } = {
-    slate: 'from-slate-500',
-    gray: 'from-gray-500',
-    zinc: 'from-zinc-500',
-    neutral: 'from-neutral-500',
-    stone: 'from-stone-500',
-    red: 'from-red-500',
-    orange: 'from-orange-500',
-    amber: 'from-amber-500',
-    yellow: 'from-yellow-500',
-    lime: 'from-lime-500',
-    green: 'from-green-500',
-    cyan: 'from-cyan-500',
-    blue: 'from-blue-500',
-    indigo: 'from-indigo-500',
-    purple: 'from-purple-500',
-    pink: 'from-pink-500',
-    violet: 'from-violet-500',
-    rose: 'from-rose-500',
-    teal: 'from-teal-500'
-};
+export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
+    
+    /*
+        NAME
 
-const to: { [key: string]: string } = {
-    slate: 'to-slate-300',
-    gray: 'to-gray-300',
-    zinc: 'to-zinc-300',
-    neutral: 'to-neutral-300',
-    stone: 'to-stone-300',
-    red: 'to-red-300',
-    orange: 'to-orange-300',
-    amber: 'to-amber-300',
-    yellow: 'to-yellow-300',
-    lime: 'to-lime-300',
-    green: 'to-green-300',
-    cyan: 'to-cyan-300',
-    blue: 'to-blue-300',
-    indigo: 'to-indigo-300',
-    purple: 'to-purple-300',
-    pink: 'to-pink-300',
-    violet: 'to-violet-300',
-    rose: 'to-rose-300',
-    teal: 'to-teal-300'
-};
+            SwipeQueue - React component that generates and maintains the user's swipe queue
+
+        SYNOPSIS
+
+            SwipeQueue({ sessionUser, filteredUsers })
+                - sessionUser: JSON object - the current user's information (from database)
+                - filteredUsers: JSON object - the filtered users based on sessionUser's preferences
+
+        DESCRIPTION
+
+            This component will generate the user's swipe queue based on the filtered users from the database.
+            It will also maintain the queue, and update it as the user swipes left or right on a card.
+            It will also update the user's swipe history.
+    */
+
+    const [users, setUsers] = useState([]);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [distanceTags, setDistanceTags] = useState([]);
+    const [image, setImages] = useState([]); // array of image urls
+    const [age, setAge] = useState(0);
+    const defaultUserLocation = "N/A, N/A";
+
+    const { trigger } = useSWRMutation('/api/updateUser', updateUser);
+
+
+    useEffect(() => {
+        setUsers(filteredUsers);
+        setDistanceTags(new Array(filteredUsers.length).fill('Calculating distance...')); // is needed to prevent the distance tag from being undefined
+
+        fetchDistances(filteredUsers);
+        fetchAge(filteredUsers);
+    }, []);
+
+    const fetchDistances = async (users) => {
+
+        /*
+        NAME
+
+           fetchDistances - fetches the distances between the current user and the other users in the queue, and updates the distance tags
+
+        SYNOPSIS
+
+            fetchDistances(users)
+                - users: JSON object - the filtered users based on sessionUser's preferences
+
+        DESCRIPTION
+
+            This function will fetch the distances between the current user and the other users in the queue, and update the distance tags.
+            It will also update the distance tags as the user swipes left or right on a card.
+    */
+
+        const newDistanceTags = await Promise.all(
+            users.map(async (user) => {
+                if (user.location) {
+                    const distance = await calculateDistanceBetweenTowns(sessionUser.location, user.location);
+                    return distance >= 0 && distance < 10 ? "< 10 miles away" : `${distance} miles away`;
+                }
+                return 'N/A miles away';
+            })
+        );
+        setDistanceTags(newDistanceTags);
+    };
+
+    const fetchAge = async (users) => {
+        /*
+            NAME
+
+                fetchAge - fetches the ages of the users in the queue, and updates the age array
+
+            SYNOPSIS
+
+                fetchAge(users)
+                    - users: JSON object - the filtered users based on sessionUser's preferences
+
+            DESCRIPTION
+
+                This function will fetch the ages of the users in the queue, and update the age array.
+                It will also update the age array as the user swipes left or right on a card.
+        */
+        
+        const newAge = await Promise.all(
+            users.map(async (user) => {
+                if (user.birthday) {
+                    const age = await calculateAge(user.birthday);
+                    return age;
+                }
+                return 'N/A';
+            })
+        );
+        setAge(newAge);
+    };
+
+    const swiped = async (direction) => {
+        /*
+            NAME
+
+                swiped - updates the user's swipe history and swipe queue
+
+            SYNOPSIS
+
+                swiped(direction)
+                    - direction: string - the direction the user swiped on the card
+
+            DESCRIPTION
+
+                This function will update the user's swipe history and swipe queue.
+                It will also update the user's swipe history as the user swipes left or right on a card.
+                Updates to the database are made as so:
+                
+                - If the user swipes right on a user, that user is added to the user's likes array.
+                - If the user swipes right on a user, and that user has already liked the user, that user is added to both users matches array.
+        */
+        
+        setCurrentIndex(currentIndex + 1); // Move to the next card in the queue
+
+        // Update the user's swipe history
+        if (direction === 'right') {
+            const liked = users[currentIndex];
+            const isMatch = liked.likes?.includes(sessionUser.userId) || false; // if other user has this user in likes already, its a match (both users have liked each other)
+            // we want to add the user id to the sessionUser's liked array, then also check for match...if match, add to matches array
+            const sessionUserLike = sessionUser.likes
+                ? [...sessionUser.likes, liked.userId]
+                : [liked.userId];
+            
+            const updatedSessionData = {
+                id: sessionUser.id,
+                likes: sessionUserLike,
+                matches: isMatch
+                    ? (sessionUser.matches
+                        ? [...sessionUser.matches, `${liked.userId} - ${liked.display_name} - ${liked.image}`]
+                        : [liked.userId])
+                    : sessionUser.matches
+            };
+
+            const updatedOtherData = {
+                id: liked.id,
+                matches: isMatch
+                    ? (liked.matches
+                        ? [...liked.matches, `${sessionUser.userId} - ${sessionUser.display_name} - ${sessionUser.image}`]
+                        : [sessionUser.userId])
+                    : liked.matches
+            };
+
+            console.log('session user like update', updatedSessionData);
+            console.log('other user like update', updatedOtherData);
+
+            
+            const sessionUserLikeUpdate = await trigger(updatedSessionData);
+            const otherUserLikeUpdate = await trigger(updatedOtherData);
+        }
+    };
+
+    const outOfFrame = (name) => {
+        console.log(`${name} left the screen!`);
+        // Optionally, handle the case when all cards are swiped away
+        if (currentIndex >= users.length - 1) {
+            // Logic when all users are swiped, e.g., reload users
+        }
+    };
+
+    return (
+        <div>
+            {users.length > 0 && currentIndex < users.length ? (
+                <TinderCard
+                    key={users[currentIndex].userId}
+                    onSwipe={(dir) => swiped(dir)}
+                    onCardLeftScreen={() => outOfFrame(users[currentIndex].userId)}
+                    preventSwipe={['up', 'down']}
+                >
+                    <UserCard user={users[currentIndex]} distanceTag={distanceTags[currentIndex]} />
+                </TinderCard>
+            ) : (
+                <div className="text-center p-10">
+                    <h2 className="text-2xl font-bold mb-5">Wow! You've been busy swiping!</h2>
+                    <p className="text-lg">There is nobody left to swipe on for now...come back later!</p>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function calculateAge(user) {
+    const today = new Date();
+    const birthday = new Date(user.birthday);
+    let ageThisYear = today.getFullYear() - birthday.getFullYear();
+
+    // Adjust age if the user hasn't had their birthday yet this year
+    if (today < new Date(today.getFullYear(), birthday.getMonth(), birthday.getDate())) {
+        ageThisYear--;
+    }
+    return ageThisYear;
+}
+
+function UserCard({ user, distanceTag }) {
+    const ageThisYear = calculateAge(user);
+
+    return (
+        <div className={user.cardTheme} style={{ userSelect: 'none' }}>
+            <Image src={user.image} alt={`${user.display_name}'s profile`} width={500} height={500} className="h-20 w-20 object-cover rounded-full mx-auto block"/>
+            <h1 className="text-4xl">{user.display_name}</h1>
+            <h2 className="text-3xl">{ageThisYear}</h2>
+            <span className="text-sm italic font-semibold">{distanceTag}</span>
+            <p className="text-center italic font-light whitespace-pre-line">{user.bio}</p>
+            <div className='flex items-center'>
+                <GlobeAltIcon className="h-5 w-5 mr-2" />
+                <h3>{user.location}</h3>
+            </div>
+            <div className="flex items-center">
+                <BriefcaseIcon className="h-5 w-5 mr-2" />
+                <h3>{user.job_position} at {user.job_company}</h3>
+            </div>
+            <div className="flex-grow mt-4">
+                <h3>Interests</h3>
+                <ul className="flex flex-row justify-center items-center gap-5 mx-auto">
+                    {[user.primary_interest, user.secondary_interest, user.third_interest]?.map((interest) => (
+                        <li key={interest} className="list-none">{interest}</li>
+                    ))}
+                </ul>
+            </div>
+        </div>
+    );
+}
 
 async function calculateDistanceBetweenTowns(town1: string, town2: string): Promise<number> {
     const town1Coordinates = await geocoding(town1);
     const town2Coordinates = await geocoding(town2);
-
     if (!town1Coordinates || !town2Coordinates) {
         return -999;
     }
 
     const distance = haversine({ lat: town1Coordinates[0], lng: town1Coordinates[1] }, { lat: town2Coordinates[0], lng: town2Coordinates[1] });
     return Math.round(distance * 0.000621371); // Convert to miles and round off
-}
-
-function convertToClass(fromColor: string, toColor: string, baseClass: string): string {
-    let className: string = baseClass;
-    if (fromColor && toColor) {
-        className += ` bg-gradient-to-r ${from[fromColor]} ${to[toColor]}`;
-    }
-    return className;
-}
-
-export default function Card({ params: { user: initialUser } }: Props) {
-    const [user, setUser] = useState(initialUser); // State to manage the current user
-    const { name, age, position, positionAt, bio, location, interests, palette } = user;
-    const [distanceTag, setDistanceTag] = useState('Calculating distance...');
-    const randomNumber = Math.floor(Math.random() * (500 - 300 + 1) + 300); // for testing the image scaling
-    const defaultUserLocation = "Wayne, NJ";
-
-    useEffect(() => {
-        async function fetchDistance() {
-            if (location) {
-                const distance = await calculateDistanceBetweenTowns(defaultUserLocation, location);
-                let distanceText = 'unknown distance';
-
-                if (distance >= 0 && distance < 10) {
-                    distanceText = "< 10 miles away";
-                } else if (distance >= 10) {
-                    distanceText = `${distance} miles away`;
-                }
-
-                setDistanceTag(distanceText);
-            }
-        }
-
-        fetchDistance();
-    }, [location]);
-
-    let defaultPalette = "text-white rounded-xl p-5 w-full md:w-1/4 flex flex-col justify-start items-end gap-2 mx-auto grow mb-20 drop-shadow-3xl text-center font-bold shadow-2xl h-full";
-    defaultPalette = convertToClass(palette[0], palette[1], defaultPalette);
-
-    const swipeFunction = (direction: string) => {
-        if (direction === 'right') {
-            console.log('HORRAYYYY');
-        }
-        else if (direction === 'left') {
-            console.log('BOOOOO');
-        }
-    }
-
-    const cardGoneFunction = (direction: string) => {
-        console.log('User has left the screen - get a new card!');
-        const newUser = generateRandomUser();
-        setUser(newUser); // Update the user with a new user
-        console.log(newUser);
-    }
-
-
-
-    return (
-        <TinderCard onSwipe={(direction) => swipeFunction(direction)} onCardLeftScreen={cardGoneFunction} preventSwipe={['up', 'down']}>
-            <div className={defaultPalette + ' flex flex-col items-center pointer-events-none'} style={{ userSelect: 'none' }}>
-                <div className="flex items-end mb-4">
-                    <Image className="h-20 w-20 object-cover rounded-full mx-auto block" src={`https://placekitten.com/500/${randomNumber}`} alt={`${name}'s profile`} width={500} height={500} />
-                </div>
-                <div className="flex justify-end w-full pr-4">
-                    <div className="flex flex-col items-end">
-                        <h1 className="text-4xl">{name}</h1>
-                        <h1 className="text-3xl">{age}</h1>
-                        <span className="text-sm italic font-semibold">{distanceTag}</span>
-                    </div>
-                </div>
-                <div className="flex justify-center items-center mb-4">
-                    <h1 className="text-center italic font-light whitespace-pre-line">
-                        {bio}
-                    </h1>
-                </div>
-                <div className="flex flex-col items-center">
-                    <div className='flex items-center'>
-                        <GlobeAltIcon className="h-5 w-5 mr-2" />
-                        <h3>
-                            {location}
-                        </h3>
-                    </div>
-
-                    <div className="flex items-center">
-                        <BriefcaseIcon className="h-5 w-5 mr-2" />
-                        <h3>{position} at {positionAt}</h3>
-                    </div>
-                    <div className="flex-grow mt-4">
-                        <h3>Interests</h3>
-                        <ul className="flex flex-row justify-center items-center gap-5 mx-auto">
-                            {interests?.map((interest) => (
-                                <li key={interest} className="">
-                                    <p>{interest}</p>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </TinderCard>
-    );
 }
