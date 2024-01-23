@@ -197,7 +197,7 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
                 </TinderCard>
             ) : (
                 <div className="text-center p-10">
-                    <h2 className="text-2xl font-bold mb-5">Wow! You've been busy swiping!</h2>
+                    <h2 className="text-2xl font-bold mb-5">Wow! You&apos;ve been busy swiping!</h2>
                     <p className="text-lg">There is nobody left to swipe on for now...come back later!</p>
                 </div>
             )}

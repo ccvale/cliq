@@ -72,10 +72,6 @@ export default function SettingsPage({ record, cid }: MyComponentProps) {
 
     const [ageRange, setAgeRange] = useState(initialAgeRange);
     const [locationRange, setLocationRange] = useState(initialLocationRange);
-
-    if (!record || !record.birthday) {
-        return null;
-    }
     
 
     // handles age logic: calculates user age, and sets it. also, if user is under 18, set the age range to 12-17
@@ -85,6 +81,10 @@ export default function SettingsPage({ record, cid }: MyComponentProps) {
             setAgeRange({ lower: 12, upper: 17 });
         }
     }, [userAge]);
+
+    if (!record || !record.birthday) {
+        return null;
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         /*
