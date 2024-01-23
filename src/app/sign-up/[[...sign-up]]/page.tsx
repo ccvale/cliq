@@ -5,10 +5,10 @@ export default function SignUpPage() {
         <section className="flex flex-row justify-between items-center bg-gradient-to-r from-pink-300 to-indigo-400 text-white rounded-xl p-10 w-4/5 mx-auto mb-10 drop-shadow-lg">
             <div className="flex-grow space-y-4">
                 <h1 className="text-6xl font-bold">
-                    You've made the right choice!
+                    You&apos;ve made the right choice!
                 </h1>
                 <p className="text-4xl font-semibold">
-                    You're just a few clicks away from making new friends!
+                    You&apos;re just a few clicks away from making new friends!
                 </p>
             </div>
             <div className="flex-none">

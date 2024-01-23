@@ -112,8 +112,8 @@ export default async function dashboard() {
       </div>
       <div>
         <section className="flex flex-col justify-center items-center text-center p-5">
-          <h1 className="text-lg text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>Don't be shy! Swipe right if you like what you see!</h1>
-          <h1 className="text-lg text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>No worries if you don't; we'll get you another card right away!</h1>
+          <h1 className="text-lg text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>Don&apos;t be shy! Swipe right if you like what you see!</h1>
+          <h1 className="text-lg text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>No worries if you don&apos;t; we&apos;ll get you another card right away!</h1>
         </section>
       </div>
     </>

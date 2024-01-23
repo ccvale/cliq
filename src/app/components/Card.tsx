@@ -222,7 +222,7 @@ function UserCard({ user, distanceTag }) {
 
     return (
         <div className={user.cardTheme} style={{ userSelect: 'none' }}>
-            <Image src={user.image} alt={`${user.display_name}'s profile`} width={500} height={500} className="h-20 w-20 object-cover rounded-full mx-auto block"/>
+            <Image src={user.image} alt={`${user.display_name}&apos;s profile`} width={500} height={500} className="h-20 w-20 object-cover rounded-full mx-auto block"/>
             <h1 className="text-4xl">{user.display_name}</h1>
             <h2 className="text-3xl">{ageThisYear}</h2>
             <span className="text-sm italic font-semibold">{distanceTag}</span>
