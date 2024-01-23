@@ -8,7 +8,7 @@ export default function SignInPage() {
                     Welcome back!
                 </h1>
                 <p className="text-4xl font-semibold">
-                    You know the drill by now...
+                    You already know what to do...
                 </p>
             </div>
             <div className="flex-none">
