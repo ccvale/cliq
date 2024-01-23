@@ -7,8 +7,12 @@ import { ClerkProvider } from '@clerk/nextjs'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Click',
+  title: 'Cliq | Swipe, Connect & Expand Your Circle',
   description: 'A social network for quick platonic connections.',
+  icons: {
+    icon: '/favicon.ico'
+  }
+  
 }
 
 /**
