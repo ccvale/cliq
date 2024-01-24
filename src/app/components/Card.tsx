@@ -12,6 +12,7 @@ import { getFilteredUsers } from '@/lib/getFilteredUsers';
 import { clerkClient } from '@clerk/nextjs';
 import useSWRMutation from 'swr/mutation';
 import updateUser from '@/lib/updateUser';
+import { ArrowLeftCircleIcon, ArrowRightCircleIcon } from '@heroicons/react/24/outline';
 
 
 type Props = {
@@ -47,6 +48,9 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
     const defaultUserLocation = "N/A, N/A";
 
     const { trigger } = useSWRMutation('/api/updateUser', updateUser);
+
+    const [rightSwipes, setRightSwipes] = useState(0);
+    const [leftSwipes, setLeftSwipes] = useState(0);
 
 
     useEffect(() => {
@@ -138,9 +142,11 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
         */
         
         setCurrentIndex(currentIndex + 1); // Move to the next card in the queue
+        
 
         // Update the user's swipe history
         if (direction === 'right') {
+            setRightSwipes(prev => prev + 1);
             const liked = users[currentIndex];
             const isMatch = liked.likes?.includes(sessionUser.userId) || false; // if other user has this user in likes already, its a match (both users have liked each other)
             // we want to add the user id to the sessionUser's liked array, then also check for match...if match, add to matches array
@@ -174,6 +180,9 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
             const sessionUserLikeUpdate = await trigger(updatedSessionData);
             const otherUserLikeUpdate = await trigger(updatedOtherData);
         }
+        else if (direction === 'left') {
+            setLeftSwipes(prev => prev + 1);
+        }
     };
 
     const outOfFrame = (name) => {
@@ -183,6 +192,20 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
             // Logic when all users are swiped, e.g., reload users
         }
     };
+
+    const totalSwipes = rightSwipes + leftSwipes;
+    const swipePercentage = totalSwipes > 0 ? Math.round((rightSwipes / totalSwipes) * 100) : 0;
+    let swipeMessage = '';
+
+    if (swipePercentage < 20) {
+        swipeMessage = 'Maybe try being less picky!';
+    } else if (swipePercentage < 50) {
+        swipeMessage = 'Quality over quantity, huh?';
+    } else if (swipePercentage < 80) {
+        swipeMessage = 'Keep up the swiping!';
+    } else {
+        swipeMessage = 'You sure are friendly!';
+    }
 
     return (
         <div>
@@ -198,9 +221,21 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
             ) : (
                 <div className="text-center p-10">
                     <h2 className="text-2xl font-bold mb-5">Wow! You&apos;ve been busy swiping!</h2>
-                    <p className="text-lg">There is nobody left to swipe on for now...come back later!</p>
+                        <p className="text-lg">There is nobody left to swipe on for now...come back later!</p>
+                        <p className="text-lg">If you&apos;re new here, you should update your settings first and try again!</p>
                 </div>
             )}
+        <div className="flex flex-row justify-center items-center mx-auto -mt-8 gap-56">
+                <ArrowLeftCircleIcon className="text-red-400 w-14 h-14" />
+                <ArrowRightCircleIcon className="text-green-400 w-14 h-14" />
+            </div>
+            <div>
+                <section className="flex flex-col justify-center items-center text-center p-5">
+                    <h1 className="text-lg text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>Current session stats: </h1>
+                    <h1 className="text-lg text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>{rightSwipes} right swipes - {leftSwipes} left swipes</h1>
+                    <h1 className="text-lg text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>{swipePercentage}% like rate <span className="italic text-sm">{swipeMessage}</span></h1>
+                </section>
+            </div>
         </div>
     );
 }

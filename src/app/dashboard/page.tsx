@@ -34,6 +34,18 @@ async function calculateDistanceBetweenTowns(town1: string, town2: string): Prom
   return Math.round(distance * 0.000621371); // Convert to miles and round off
 }
 
+function getAge(user: any) {
+  const today = new Date();
+  const birthday = new Date(user.birthday);
+  let ageThisYear = today.getFullYear() - birthday.getFullYear();
+
+  // Adjust age if the user hasn't had their birthday yet this year
+  if (today < new Date(today.getFullYear(), birthday.getMonth(), birthday.getDate())) {
+    ageThisYear--;
+  }
+  return ageThisYear;
+}
+
 export default async function dashboard() {
   const user = await currentUser(); //seems to work
   //console.log(user);
@@ -42,20 +54,32 @@ export default async function dashboard() {
   const xataClient = getXataClient();
 
   let userPreferences = await xataClient.db.Users.filter({ 'userId': user?.id }).getFirst();
+  
+  if (!userPreferences) {
+    // we want to add a new user to the database if they don't exist
+    let newUser = await xataClient.db.Users.create({
+      userId: user?.id,
+      location_filter: ['0', '9999999'],
+      age_filter: ['18', '100'],
+      gender: 'Other'
+    })
+
+  }
 
   const filteredUsers = [];
 
   // fetch all users from xataClient where todays date minus their birthday is less than or equal to their age_filter[0] value
   // and todays date minus their birthday is greater than or equal to their age_filter[1] value
   if (userPreferences) {
-    const today = new Date();
-    const minAge = userPreferences.age_filter[0];
-    const maxAge = userPreferences.age_filter[1];
+    const userAge = getAge(userPreferences);
+
+    const minAge = userPreferences.age_filter?.[0] ? (userAge < 18 ? 13 : userPreferences.age_filter[0]) : 18;
+    const maxAge = userPreferences.age_filter?.[1] ? (userAge < 18 ? 17 : userPreferences.age_filter[1]) : 100;
 
     const currentUserLocation = userPreferences.location; // assuming 'location' is a field in userPreferences
 
-    const minDistance = userPreferences.location_filter[0]; // minimum distance
-    const maxDistance = userPreferences.location_filter[1]; // maximum distance
+    const minDistance = userPreferences.location_filter?.[0] ?? 0; // minimum distance
+    const maxDistance = userPreferences.location_filter?.[1] ?? 9999999; // maximum distance
 
     const allUsers = await xataClient.db.Users.filter({
       $not: {
@@ -70,15 +94,9 @@ export default async function dashboard() {
         continue;
       }
 
-      const birthday = new Date(otherUser.birthday);
-      let ageThisYear = today.getFullYear() - birthday.getFullYear();
+      const otherUserAge = getAge(otherUser);
 
-      // Adjust age if the user hasn't had their birthday yet this year
-      if (today < new Date(today.getFullYear(), birthday.getMonth(), birthday.getDate())) {
-        ageThisYear--;
-      }
-
-      const ageInRange = ageThisYear >= minAge && ageThisYear <= maxAge;
+      const ageInRange = otherUserAge >= minAge && otherUserAge <= maxAge;
       if (ageInRange) {
         const distance = await calculateDistanceBetweenTowns(currentUserLocation, otherUser.location);
         if (distance >= minDistance && distance <= maxDistance) {
@@ -96,8 +114,11 @@ export default async function dashboard() {
   }
 
   userPreferences = userPreferences?.toSerializable();
-  const sessionUserData = (await clerkClient.users.getUser(userPreferences?.userId));
-  userPreferences.image = sessionUserData.imageUrl;
+  const sessionUserData = (await clerkClient.users.getUser(user?.id));
+
+  if (userPreferences) {
+    userPreferences.image = sessionUserData.imageUrl;
+  }
 
 
   //iterate through filtered users, and run const userData = await clerkClient.users.getUser(user?.id) for each
@@ -106,16 +127,7 @@ export default async function dashboard() {
   return (
     <>
       <SwipeQueue sessionUser={userPreferences} filteredUsers={filteredUsers}/>
-      <div className="flex flex-row justify-center items-center mx-auto -mt-8 gap-56">
-        <ArrowLeftCircleIcon className="text-red-400 w-14 h-14" />
-        <ArrowRightCircleIcon className="text-green-400 w-14 h-14" />
-      </div>
-      <div>
-        <section className="flex flex-col justify-center items-center text-center p-5">
-          <h1 className="text-lg text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>Don&apos;t be shy! Swipe right if you like what you see!</h1>
-          <h1 className="text-lg text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>No worries if you don&apos;t; we&apos;ll get you another card right away!</h1>
-        </section>
-      </div>
+      
     </>
   )
 }
