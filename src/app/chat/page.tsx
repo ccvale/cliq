@@ -8,6 +8,14 @@ export default async function Chat() {
 
     const sessionUserRaw = await xataClient.db.Users.filter({ 'userId': user?.id }).getFirst();
     const sessionUser = { ...sessionUserRaw };
+    
+    const matchMessages = await xataClient.db.messages.filter({
+        $any: [
+            { sender_id: sessionUserRaw?.userId },
+            { receiver_id: sessionUserRaw?.userId }
+        ]
+    }).getMany();
+
 
     let userDetails: { userId: string; displayName: string; imageUrl: string; }[] = [];
 
@@ -19,6 +27,6 @@ export default async function Chat() {
     }
 
     return (
-        <ChatComponent sessionUser={sessionUser} userDetails={userDetails} />
+        <ChatComponent sessionUser={sessionUser} userDetails={userDetails} matchMessages={matchMessages.toSerializable()} />
     );
 }

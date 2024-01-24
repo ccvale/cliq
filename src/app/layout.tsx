@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Cabin } from 'next/font/google'
 import './globals.css'
 import Navbar from './components/Navbar'
 import { ClerkProvider } from '@clerk/nextjs'
 
-const inter = Inter({ subsets: ['latin'] })
+const font = Cabin({weight: '700', subsets: ['latin']})
 
 export const metadata: Metadata = {
   title: 'Cliq | Swipe, Connect & Expand Your Circle',
@@ -31,7 +31,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body className="flex flex-col min-h-screen overflow-hidden">
+        <body className={`flex flex-col min-h-screen overflow-hidden ${font.className}`}>
           <Navbar />
           <main className="flex flex-col grow">
             {children}

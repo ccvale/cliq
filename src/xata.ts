@@ -15,7 +15,7 @@ const tables = [
         name: "birthday",
         type: "datetime",
         notNull: true,
-        defaultValue: "2023-01-01T00:00:00.000Z",
+        defaultValue: "2001-01-21T00:00:00.000Z",
       },
       {
         name: "location",
@@ -29,20 +29,28 @@ const tables = [
         notNull: true,
         defaultValue: "The user has no bio.",
       },
-      { name: "primary_interest", type: "string", defaultValue: "Art" },
-      { name: "secondary_interest", type: "string", defaultValue: "Food" },
-      { name: "third_interest", type: "string", defaultValue: "Music" },
-      { name: "job_position", type: "string", defaultValue: "No Job" },
-      { name: "job_company", type: "string", defaultValue: "No Company" },
+      { name: "job_position", type: "string", defaultValue: "N/A" },
+      { name: "job_company", type: "string", defaultValue: "N/A" },
       { name: "age_filter", type: "multiple" },
       { name: "location_filter", type: "multiple" },
       { name: "primary_palette", type: "string", defaultValue: "Indigo" },
       { name: "secondary_palette", type: "string", defaultValue: "Cyan" },
       { name: "display_name", type: "string", defaultValue: "Nameless" },
-      { name: "gender", type: "string", defaultValue: "Male" },
+      { name: "gender", type: "string", defaultValue: "Other" },
       { name: "matches", type: "multiple" },
-      { name: "likes", type: "multiple" }
-
+      { name: "primary_interest", type: "string", defaultValue: "TV" },
+      { name: "secondary_interest", type: "string", defaultValue: "Food" },
+      { name: "third_interest", type: "string", defaultValue: "Music" },
+      { name: "likes", type: "multiple" },
+      { name: "image", type: "string" },
+    ],
+  },
+  {
+    name: "messages",
+    columns: [
+      { name: "sender_id", type: "string" },
+      { name: "receiver_id", type: "string" },
+      { name: "message", type: "text" },
     ],
   },
 ] as const;
@@ -53,8 +61,12 @@ export type InferredTypes = SchemaInference<SchemaTables>;
 export type Users = InferredTypes["Users"];
 export type UsersRecord = Users & XataRecord;
 
+export type Messages = InferredTypes["messages"];
+export type MessagesRecord = Messages & XataRecord;
+
 export type DatabaseSchema = {
   Users: UsersRecord;
+  messages: MessagesRecord;
 };
 
 const DatabaseClient = buildClient();

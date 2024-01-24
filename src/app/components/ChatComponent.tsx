@@ -1,35 +1,71 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-
-// Simulated chat history
-const fakeChatHistory = {
-    0: [{ sender: "other", text: "Hello there!" }, { sender: "user", text: "Hi!" }],
-    1: [{ sender: "other", text: "How's it going?" }],
-    // Add more chat history for other users if needed
-};
+import useSWRMutation from 'swr/mutation';
+import newMessage from '@/lib/newMessage';
 
 type Props = {
     sessionUser: any,
-    userDetails: any
+    userDetails: any,
+    matchMessages: any
 }
 
-export default function ChatComponent({ sessionUser, userDetails }: Props) {
+export default function ChatComponent({ sessionUser, userDetails, matchMessages }: Props) {
     const [activeChat, setActiveChat] = useState(null);
     const [currentChatHistory, setCurrentChatHistory] = useState([]);
-    const [newMessage, setNewMessage] = useState("");
+    const [nMessage, setNewMessage] = useState("");
+    const [organizedChats, setOrganizedChats] = useState({});
+
+    const { trigger } = useSWRMutation('/api/newMessage', newMessage);
+
+    // Organize chat messages by conversation
+    useEffect(() => {
+        const chats = {};
+        matchMessages.forEach(message => {
+            const otherUserId = message.sender_id === sessionUser.userId ? message.receiver_id : message.sender_id;
+            if (!chats[otherUserId]) {
+                chats[otherUserId] = [];
+            }
+            chats[otherUserId].push(message);
+        });
+        setOrganizedChats(chats);
+    }, [matchMessages, sessionUser.userId]);
+
 
     // Load chat history when active chat changes
     useEffect(() => {
         if (activeChat !== null) {
-            setCurrentChatHistory(fakeChatHistory[activeChat] || []);
+            setCurrentChatHistory(organizedChats[activeChat] || []);
         }
-    }, [activeChat]);
+    }, [activeChat, organizedChats]);
 
-    const handleSendMessage = () => {
-        if (newMessage.trim() !== "") {
-            const updatedChatHistory = [...currentChatHistory, { sender: "user", text: newMessage }];
-            setCurrentChatHistory(updatedChatHistory);
+    const handleSendMessage = async () => {
+        if (nMessage.trim() !== "") {
+            const newMsg = {
+                sender_id: sessionUser.userId,
+                receiver_id: activeChat,
+                message: nMessage,
+                // Add other fields like timestamps if needed
+            };
+
+            // Update the currentChatHistory
+            setCurrentChatHistory(prevHistory => [...prevHistory, newMsg]);
+
+            // Also update organizedChats with the new message
+            setOrganizedChats(prevChats => ({
+                ...prevChats,
+                [activeChat]: [...(prevChats[activeChat] || []), newMsg]
+            }));
+
             setNewMessage(""); // Clear the input field
+
+            // Send the message to the server
+            try {
+                const response = await trigger(newMsg);
+                console.log("Message sent, server response:", response);
+            } catch (error) {
+                console.error("Failed to send message:", error);
+                // Handle failed message sending (e.g., show an error message)
+            }
         }
     };
 
@@ -37,41 +73,47 @@ export default function ChatComponent({ sessionUser, userDetails }: Props) {
         <div className="flex h-screen">
             {/* Left panel */}
             <div className="w-2/3 bg-gray-100 border-r border-gray-300 p-4 overflow-y-auto">
-                <h1 className="text-xl font-semibold mb-4">Chats <span className="italic text-sm">- First impressions are everything...don&apos;t leave anything unsaid!</span></h1>
+                <h1 className="text-xl font-semibold mb-4">Chats</h1>
                 <div>
-                    {userDetails.length > 0 ? (
-                        userDetails.map((match, index) => (
+                    {userDetails.map((user, index) => {
+                        const lastMessage = organizedChats[user.userId] ? organizedChats[user.userId][organizedChats[user.userId].length - 1] : null;
+                        const lastMessageTime = lastMessage ? new Date(lastMessage.xata?.updatedAt || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+                        return (
                             <div key={index}
-                                className={`flex items-center mb-4 p-2 rounded-lg cursor-pointer ${activeChat === index ? 'bg-gray-300' : 'hover:bg-gray-200'}`}
-                                onClick={() => setActiveChat(index)}>
-                                <img src={match.imageUrl} alt={match.displayName} className="h-12 w-12 rounded-full mr-3" />
-                                <div>
-                                    <p className="font-medium">{match.displayName}</p>
-                                    <p className="text-sm text-gray-600">Last message preview...</p>
+                                className={`flex items-center mb-4 p-2 rounded-lg cursor-pointer ${activeChat === user.userId ? 'bg-gray-300' : 'hover:bg-gray-200'}`}
+                                onClick={() => setActiveChat(user.userId)}>
+                                <img src={user.imageUrl} alt={user.displayName} className="h-12 w-12 rounded-full mr-3" />
+                                <div className="flex flex-col flex-grow">
+                                    <div className="flex justify-between">
+                                        <p className="font-medium">{user.displayName}</p>
+                                        <p className="text-xs text-gray-500">{lastMessageTime}</p>
+                                    </div>
+                                    {lastMessage && (
+                                        <p className="text-sm text-gray-600">{lastMessage.message}</p>
+                                    )}
                                 </div>
                             </div>
-                        ))
-                    ) : (
-                        <p>No matches found.</p>
-                    )}
+                        );
+                    })}
                 </div>
             </div>
 
             {/* Right panel (Chat interface) */}
             <div className="w-2/3 flex flex-col h-5/6">
                 {/* Chat Header */}
-                {activeChat !== null && (
+                {activeChat !== null && userDetails.find(user => user.userId === activeChat) && (
                     <div className="p-3 border-b border-gray-300">
-                        <h2 className="text-lg font-semibold">{userDetails[activeChat].displayName}</h2>
+                        <h2 className="text-lg font-semibold">{userDetails.find(user => user.userId === activeChat).displayName}</h2>
                     </div>
                 )}
 
-                {/* Message Display Area - Adjusted for fixed-height typing area */}
+                {/* Message Display Area */}
                 <div className="flex-1 overflow-y-auto p-3 space-y-2" style={{ maxHeight: 'calc(100% - 4rem)' }}>
-                    {currentChatHistory.map((msg, index) => (
-                        <div key={index} className={`flex ${msg.sender === "user" ? "justify-end" : ""}`}>
-                            <div className={`max-w-xs md:max-w-md lg:max-w-lg p-2 rounded-lg ${msg.sender === "user" ? "bg-blue-100" : "bg-gray-100"}`}>
-                                {msg.text}
+                    {activeChat && organizedChats[activeChat] && organizedChats[activeChat].map((msg, index) => (
+                        <div key={index} className={`flex ${msg.sender_id === sessionUser.userId ? "justify-end" : ""}`}>
+                            <div className={`max-w-xs md:max-w-md lg:max-w-lg p-2 rounded-lg ${msg.sender_id === sessionUser.userId ? "bg-blue-100" : "bg-gray-100"}`}>
+                                {msg.message}
                             </div>
                         </div>
                     ))}
@@ -80,7 +122,7 @@ export default function ChatComponent({ sessionUser, userDetails }: Props) {
                 {/* Typing Area */}
                 {activeChat !== null && (
                     <div className="p-3 border-t border-gray-300 flex bg-white">
-                        <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)}
+                        <input type="text" value={nMessage} onChange={e => setNewMessage(e.target.value)}
                             className="flex-1 p-2 border border-gray-300 rounded-lg mr-2"
                             placeholder="Type a message..." />
                         <button onClick={handleSendMessage} className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg p-2">
@@ -92,4 +134,3 @@ export default function ChatComponent({ sessionUser, userDetails }: Props) {
         </div>
     );
 }
-
