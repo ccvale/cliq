@@ -26,6 +26,17 @@ export default async function Chat() {
         });
     }
 
+    if (!sessionUser?.matches || sessionUser.matches.length === 0) {
+        return (
+            <div className="flex justify-center items-center h-screen" style={{ paddingBottom: '40vh' }}>
+                <div className="text-center">
+                    <h1 className="text-3xl text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>You don't have any matches...yet!</h1>
+                    <h1 className="text-2xl text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>Get out there and make some friends!</h1>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <ChatComponent sessionUser={sessionUser} userDetails={userDetails} matchMessages={matchMessages.toSerializable()} />
     );
