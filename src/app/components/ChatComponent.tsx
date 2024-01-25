@@ -13,7 +13,7 @@ type Props = {
     matchMessages: any
 }
 
-const socket = io('http://localhost:3000', {
+const socket = io('http://cliq.fi', {
     path: '/socket.io',
     transports: ['websocket'],
 });
