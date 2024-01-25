@@ -13,12 +13,13 @@ type Props = {
     matchMessages: any
 }
 
-const socket = io('http://cliq.fi', {
+const socket = io('http://localhost:3000', {
     path: '/socket.io',
     transports: ['websocket'],
 });
 
 export default function ChatComponent({ sessionUser, userDetails, matchMessages }: Props) {
+
     const [activeChat, setActiveChat] = useState(null);
     const [currentChatHistory, setCurrentChatHistory] = useState([]);
     const [nMessage, setNewMessage] = useState("");
@@ -49,16 +50,17 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
     }, [activeChat, organizedChats]);
 
     useEffect(() => {
-        socket.on('newMessage', (message) => {
+        socket.on('receiveMessage', (message) => {
+            console.log("Received message:", message);
             setCurrentChatHistory(prevHistory => [...prevHistory, message]);
             setOrganizedChats(prevChats => ({
                 ...prevChats,
-                [message.chatId]: [...(prevChats[message.chatId] || []), message]
+                [message.sender_id]: [...(prevChats[message.sender_id] || []), message]
             }));
         });
 
         return () => {
-            socket.off('newMessage');
+            socket.off('receiveMessage');
         };
     }, []);
 
@@ -85,7 +87,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
             // Send the message to the server
             try {
                 const response = await trigger(newSentMessage);
-                socket.emit('sendMessage', newSentMessage);
+                await socket.emit('sendMessage', newSentMessage);
                 //console.log("Message sent, server response:", response);
             } catch (error) {
                 console.error("Failed to send message:", error);

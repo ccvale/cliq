@@ -14,14 +14,15 @@ nextApp.prepare().then(() => {
     const io = socketIo(server);
 
     io.on('connection', socket => {
-        console.log('New client connected');
+        console.log('New client connected: ', socket.id);
 
         socket.on('disconnect', () => {
             console.log('Client disconnected');
         });
 
         socket.on('sendMessage', message => {
-            io.emit('newMessage', message);
+            //console.log('sendMessage', message);
+            io.emit('receiveMessage', message);
         });
     });
 

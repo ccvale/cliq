@@ -14,7 +14,7 @@ export default async function Chat() {
             { sender_id: sessionUserRaw?.userId },
             { receiver_id: sessionUserRaw?.userId }
         ]
-    }).getMany();
+    }).getAll();
 
 
     let userDetails: { id: string; userId: string; displayName: string; imageUrl: string; }[] = [];
@@ -38,6 +38,6 @@ export default async function Chat() {
     }
 
     return (
-        <ChatComponent sessionUser={sessionUser} userDetails={userDetails} matchMessages={matchMessages.toSerializable()} />
+        <ChatComponent sessionUser={sessionUser} userDetails={userDetails} matchMessages={matchMessages} />
     );
 }
