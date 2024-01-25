@@ -13,7 +13,7 @@ type Props = {
     matchMessages: any
 }
 
-const socket = io('https://cliq-9v28vw6ud-ccvales-projects.vercel.app', {
+const socket = io('https://cliq-9v28vw6ud-ccvales-projects.vercel.app:3000', {
     path: '/socket.io',
     transports: ['websocket'],
 });
