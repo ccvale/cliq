@@ -5,12 +5,18 @@ import newMessage from '@/lib/newMessage';
 import updateUser from '@/lib/updateUser';
 import getUser from '@/lib/getUser';
 import { XCircleIcon } from '@heroicons/react/24/outline';
+import io from 'socket.io-client';
 
 type Props = {
     sessionUser: any,
     userDetails: any,
     matchMessages: any
 }
+
+const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3000', {
+    path: '/socket.io',
+    transports: ['websocket'],
+});
 
 export default function ChatComponent({ sessionUser, userDetails, matchMessages }: Props) {
     const [activeChat, setActiveChat] = useState(null);
@@ -42,6 +48,21 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
         }
     }, [activeChat, organizedChats]);
 
+    useEffect(() => {
+        socket.on('newMessage', (message) => {
+            setCurrentChatHistory(prevHistory => [...prevHistory, message]);
+            setOrganizedChats(prevChats => ({
+                ...prevChats,
+                [message.chatId]: [...(prevChats[message.chatId] || []), message]
+            }));
+        });
+
+        return () => {
+            socket.off('newMessage');
+        };
+    }, []);
+
+
     const handleSendMessage = async () => {
         if (nMessage.trim() !== "") {
             const newSentMessage = {
@@ -64,6 +85,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
             // Send the message to the server
             try {
                 const response = await trigger(newSentMessage);
+                socket.emit('sendMessage', newSentMessage);
                 //console.log("Message sent, server response:", response);
             } catch (error) {
                 console.error("Failed to send message:", error);
@@ -83,7 +105,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
             const sessionUpdatedUser = { id: sessionUser.id, matches: sessionUpdatedMatches, likes: sessionUpdatedLikes };
 
             const matchUserData = (await getUser(user.id));
-            console.log(matchUserData);
+
             const matchUserMatches = matchUserData.matches;
             const matchUserLikes = matchUserData.likes;
 

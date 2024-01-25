@@ -216,7 +216,7 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
             ) : (
                 <div className="text-center p-10">
                     <h2 className="text-2xl font-bold mb-5">Wow! You&apos;ve been busy swiping!</h2>
-                        <p className="text-lg">There is nobody left to swipe on for now...come back later!</p>
+                        <p className="text-lg">There is nobody new left to swipe on for now...come back later!</p>
                         <p className="text-lg">If you&apos;re new here, you should update your settings first and try again!</p>
                 </div>
             )}
