@@ -1,9 +1,13 @@
-export default async function updateUser(url: string, data: any) {
+export default async function updateUser(url: any, data: any) {
+
+    console.log(data);
 
     // this is the working version
 
     const id = data['arg']['id'];
-    delete data['arg']['id'];
+    if (id) {
+        delete data['arg']['id'];
+    }
 
     const options = {
         method: 'PATCH',

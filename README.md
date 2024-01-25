@@ -22,9 +22,7 @@ This project is ambitious, and has a lot of additional exciting features that ha
 
   - Users will be able to chat with matches if and only if a formal match has occurred ✅
 
-  - Users will have the ability to block (and report, if this project ever scales) their matches if they feel they have crossed a line, or said something explicit/inappropriate
-
-    - They will also be allowed to “un-match” them at any time, instantly removing the ability for them to chat with each other
+  - Users will have the ability to unmatch (and report, if this project ever scales) their matches if they feel they have crossed a line, or said something explicit/inappropriate, instantly blocking them from further communication ✅
 
 - **Swiping - the core functionality**
 
@@ -68,7 +66,4 @@ In a project of this scale, there are many other features that I would like to i
   - Ability to send other types of media (images, gifs, etc.)
 
   - Display an indicator when a user is typing, has read a message, or is currently online
-
-
-  
 

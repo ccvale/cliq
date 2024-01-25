@@ -240,42 +240,42 @@ return (
                     </label>
                 </div>
 
-                    <div className="w-full mb-4">
-                        <label className="block text-xl mb-2 text-white">Age Range <span className="italic text-sm">- Select your preferred age range</span>
-                            <div className="flex justify-between items-center">
-                                <span className="mx-2 text-white text-sm">{ageRange.lower}</span>
-                                <input
-                                    type="range"
-                                    min={userAge >= 18 ? 18 : 12}
-                                    max={ageRange.upper} // Set the max to the current upper range value
-                                    value={ageRange.lower}
-                                    onChange={(e) => {
-                                        const newLowerValue = parseInt(e.target.value);
-                                        setAgeRange({
-                                            ...ageRange,
-                                            lower: newLowerValue < ageRange.upper ? newLowerValue : ageRange.upper // Ensure lower value is not more than upper value
-                                        });
-                                    }}
-                                    className="text-sm range-slider-thumb w-1/2 p-2 rounded accent-indigo-500"
-                                />
-                                <input
-                                    type="range"
-                                    min={userAge >= 18 ? 18 : 12}
-                                    max="100"
-                                    value={ageRange.upper}
-                                    onChange={(e) => {
-                                        const newUpperValue = parseInt(e.target.value);
-                                        setAgeRange({
-                                            ...ageRange,
-                                            upper: newUpperValue > ageRange.lower ? newUpperValue : ageRange.lower // Ensure upper value is not less than lower value
-                                        });
-                                    }}
-                                    className="text-sm range-slider-thumb w-1/2 p-2 rounded accent-indigo-500"
-                                />
-                                <span className="mx-2 text-white text-sm">{ageRange.upper}</span>
-                            </div>
-                        </label>
-                    </div>
+                <div className="w-full mb-4">
+                    <label className="block text-xl mb-2 text-white">Age Range <span className="italic text-sm">- Select your preferred age range</span>
+                        <div className="flex justify-between items-center">
+                            <span className="mx-2 text-white text-sm">{ageRange.lower}</span>
+                            <input
+                                type="range"
+                                min={userAge >= 18 ? 18 : 13}
+                                max={userAge >= 18 ? ageRange.upper : 17} // Max is 17 if user is under 18
+                                value={ageRange.lower}
+                                onChange={(e) => {
+                                    const newLowerValue = parseInt(e.target.value);
+                                    setAgeRange({
+                                        ...ageRange,
+                                        lower: newLowerValue < ageRange.upper ? newLowerValue : ageRange.upper // Ensure lower value is not more than upper value
+                                    });
+                                }}
+                                className="text-sm range-slider-thumb w-1/2 p-2 rounded accent-indigo-500"
+                            />
+                            <input
+                                type="range"
+                                min={userAge >= 18 ? 18 : 13}
+                                max={userAge >= 18 ? 100 : 17} // Max is 17 if user is under 18
+                                value={ageRange.upper}
+                                onChange={(e) => {
+                                    const newUpperValue = parseInt(e.target.value);
+                                    setAgeRange({
+                                        ...ageRange,
+                                        upper: newUpperValue > ageRange.lower ? newUpperValue : ageRange.lower // Ensure upper value is not less than lower value
+                                    });
+                                }}
+                                className="text-sm range-slider-thumb w-1/2 p-2 rounded accent-indigo-500"
+                            />
+                            <span className="mx-2 text-white text-sm">{ageRange.upper}</span>
+                        </div>
+                    </label>
+                </div>
                     
                     <div className="w-full mb-4">
                         <label className="block text-xl mb-2 text-white">Location Range <span className="italic text-sm">- Set your maximum location range in miles</span>

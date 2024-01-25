@@ -17,12 +17,12 @@ export default async function Chat() {
     }).getMany();
 
 
-    let userDetails: { userId: string; displayName: string; imageUrl: string; }[] = [];
+    let userDetails: { id: string; userId: string; displayName: string; imageUrl: string; }[] = [];
 
     if (sessionUser?.matches) {
         userDetails = sessionUser.matches.map(match => {
-            const [userId, displayName, imageUrl] = match.split(' - ');
-            return { userId, displayName, imageUrl };
+            const [id, userId, displayName, imageUrl] = match.split(' - ');
+            return { id, userId, displayName, imageUrl };
         });
     }
 

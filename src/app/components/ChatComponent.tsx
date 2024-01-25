@@ -2,6 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import useSWRMutation from 'swr/mutation';
 import newMessage from '@/lib/newMessage';
+import updateUser from '@/lib/updateUser';
+import getUser from '@/lib/getUser';
+import { XCircleIcon } from '@heroicons/react/24/outline';
 
 type Props = {
     sessionUser: any,
@@ -16,6 +19,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
     const [organizedChats, setOrganizedChats] = useState({});
 
     const { trigger } = useSWRMutation('/api/newMessage', newMessage);
+    const { trigger: userTrigger } = useSWRMutation('/api/updateUser', updateUser);
 
     // Organize chat messages by conversation
     useEffect(() => {
@@ -40,28 +44,27 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
 
     const handleSendMessage = async () => {
         if (nMessage.trim() !== "") {
-            const newMsg = {
+            const newSentMessage = {
                 sender_id: sessionUser.userId,
                 receiver_id: activeChat,
                 message: nMessage,
-                // Add other fields like timestamps if needed
             };
 
             // Update the currentChatHistory
-            setCurrentChatHistory(prevHistory => [...prevHistory, newMsg]);
+            setCurrentChatHistory(prevHistory => [...prevHistory, newSentMessage]);
 
             // Also update organizedChats with the new message
             setOrganizedChats(prevChats => ({
                 ...prevChats,
-                [activeChat]: [...(prevChats[activeChat] || []), newMsg]
+                [activeChat]: [...(prevChats[activeChat] || []), newSentMessage]
             }));
 
             setNewMessage(""); // Clear the input field
 
             // Send the message to the server
             try {
-                const response = await trigger(newMsg);
-                console.log("Message sent, server response:", response);
+                const response = await trigger(newSentMessage);
+                //console.log("Message sent, server response:", response);
             } catch (error) {
                 console.error("Failed to send message:", error);
                 // Handle failed message sending (e.g., show an error message)
@@ -69,11 +72,40 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
         }
     };
 
+    const handleUnmatchUser = async (user) => {
+        if (window.confirm(`Are you sure you would like to unmatch ${user.displayName}?`)) {
+            // Implement the logic to unmatch the user
+            // Example: await unmatchUser(userId);
+
+            // remove each other from matches
+            const sessionUpdatedMatches = sessionUser.matches.filter(item => !item.includes(user.id));
+            const sessionUpdatedLikes = sessionUser.likes.filter(item => !item.includes(user.userId));
+            const sessionUpdatedUser = { id: sessionUser.id, matches: sessionUpdatedMatches, likes: sessionUpdatedLikes };
+
+            const matchUserData = (await getUser(user.id));
+            console.log(matchUserData);
+            const matchUserMatches = matchUserData.matches;
+            const matchUserLikes = matchUserData.likes;
+
+            const matchUpdatedMatches = matchUserMatches.filter(item => !item.includes(sessionUser.id));
+            const matchUpdatedLikes = matchUserLikes.filter(item => !item.includes(sessionUser.userId));
+            const matchUpdatedUser = { id: user.id, matches: matchUpdatedMatches, likes: matchUpdatedLikes};
+
+            await userTrigger(sessionUpdatedUser);
+            await userTrigger(matchUpdatedUser);
+
+
+            window.location.reload(); // Simple page refresh
+            // Or update state to remove user from the list without refreshing
+
+        }
+    };
+
     return (
         <div className="flex h-screen">
             {/* Left panel */}
-            <div className="w-2/3 bg-gray-100 border-r border-gray-300 p-4 overflow-y-auto">
-                <h1 className="text-xl font-semibold mb-4">Chats</h1>
+            <div className="w-2/3 bg-gray-50 border-r border-gray-200 p-4 overflow-y-auto">
+                <h1 className="text-2xl font-bold text-gray-800 mb-6">Chats</h1>
                 <div>
                     {userDetails.map((user, index) => {
                         const lastMessage = organizedChats[user.userId] ? organizedChats[user.userId][organizedChats[user.userId].length - 1] : null;
@@ -81,7 +113,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
 
                         return (
                             <div key={index}
-                                className={`flex items-center mb-4 p-2 rounded-lg cursor-pointer ${activeChat === user.userId ? 'bg-gray-300' : 'hover:bg-gray-200'}`}
+                                className={`flex items-center mb-4 p-2 rounded-lg cursor-pointer ${activeChat === user.userId ? 'bg-indigo-300' : 'hover:bg-indigo-200'}`}
                                 onClick={() => setActiveChat(user.userId)}>
                                 <img src={user.imageUrl} alt={user.displayName} className="h-12 w-12 rounded-full mr-3" />
                                 <div className="flex flex-col flex-grow">
@@ -93,6 +125,12 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
                                         <p className="text-sm text-gray-600">{lastMessage.message}</p>
                                     )}
                                 </div>
+                                <button onClick={(e) => {
+                                    e.stopPropagation(); // Prevents triggering setActiveChat
+                                    handleUnmatchUser(user);
+                                }} className="p-1 rounded-full hover:bg-gray-100">
+                                    <XCircleIcon className="h-6 w-6 text-red-500" />
+                                </button>
                             </div>
                         );
                     })}
@@ -100,7 +138,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
             </div>
 
             {/* Right panel (Chat interface) */}
-            <div className="w-2/3 flex flex-col h-5/6">
+            <div className="w-2/3 flex flex-col h-5/6 bg-white">
                 {/* Chat Header */}
                 {activeChat !== null && userDetails.find(user => user.userId === activeChat) && (
                     <div className="p-3 border-b border-gray-300">
@@ -112,7 +150,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
                 <div className="flex-1 overflow-y-auto p-3 space-y-2" style={{ maxHeight: 'calc(100% - 4rem)' }}>
                     {activeChat && organizedChats[activeChat] && organizedChats[activeChat].map((msg, index) => (
                         <div key={index} className={`flex ${msg.sender_id === sessionUser.userId ? "justify-end" : ""}`}>
-                            <div className={`max-w-xs md:max-w-md lg:max-w-lg p-2 rounded-lg ${msg.sender_id === sessionUser.userId ? "bg-blue-100" : "bg-gray-100"}`}>
+                            <div className={`max-w-xs md:max-w-md lg:max-w-lg p-2 rounded-lg ${msg.sender_id === sessionUser.userId ? "bg-gradient-to-r from-indigo-400 to-indigo-400 text-white" : "bg-gradient-to-r from-pink-300 to-pink-300 text-white"}`}>
                                 {msg.message}
                             </div>
                         </div>
@@ -124,8 +162,8 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
                     <div className="p-3 border-t border-gray-300 flex bg-white">
                         <input type="text" value={nMessage} onChange={e => setNewMessage(e.target.value)}
                             className="flex-1 p-2 border border-gray-300 rounded-lg mr-2"
-                            placeholder="Type a message..." />
-                        <button onClick={handleSendMessage} className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg p-2">
+                            placeholder="Type a message..."/>
+                        <button onClick={handleSendMessage} className="bg-gradient-to-r from-indigo-400 to-indigo-400 text-white px-4 py-2 rounded-lg hover:from-indigo-300 hover:to-indigo-300">
                             Send
                         </button>
                     </div>

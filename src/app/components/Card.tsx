@@ -142,7 +142,6 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
         */
         
         setCurrentIndex(currentIndex + 1); // Move to the next card in the queue
-        
 
         // Update the user's swipe history
         if (direction === 'right') {
@@ -159,8 +158,8 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
                 likes: sessionUserLike,
                 matches: isMatch
                     ? (sessionUser.matches
-                        ? [...sessionUser.matches, `${liked.userId} - ${liked.display_name} - ${liked.image}`]
-                        : [liked.userId])
+                        ? [...sessionUser.matches, `${liked.id} - ${liked.userId} - ${liked.display_name} - ${liked.image}`]
+                        : [`${liked.id} - ${liked.userId} - ${liked.display_name} - ${liked.image}`])
                     : sessionUser.matches
             };
 
@@ -168,13 +167,10 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
                 id: liked.id,
                 matches: isMatch
                     ? (liked.matches
-                        ? [...liked.matches, `${sessionUser.userId} - ${sessionUser.display_name} - ${sessionUser.image}`]
-                        : [sessionUser.userId])
+                        ? [...liked.matches, `${sessionUser.id} - ${sessionUser.userId} - ${sessionUser.display_name} - ${sessionUser.image}`]
+                        : [`${sessionUser.id} - ${sessionUser.userId} - ${sessionUser.display_name} - ${sessionUser.image}`])
                     : liked.matches
             };
-
-            console.log('session user like update', updatedSessionData);
-            console.log('other user like update', updatedOtherData);
 
             
             const sessionUserLikeUpdate = await trigger(updatedSessionData);
@@ -186,8 +182,7 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
     };
 
     const outOfFrame = (name) => {
-        console.log(`${name} left the screen!`);
-        // Optionally, handle the case when all cards are swiped away
+        //console.log(`${name} left the screen!`);
         if (currentIndex >= users.length - 1) {
             // Logic when all users are swiped, e.g., reload users
         }
