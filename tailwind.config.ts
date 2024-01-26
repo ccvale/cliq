@@ -61,7 +61,7 @@ const config: Config = {
     'to-purple-300',
     'to-fuchsia-300',
     'to-pink-300',
-    'to-rose-300'
+    'to-rose-300',
 
     'from-slate-300',
     'from-gray-300',

@@ -1,6 +1,7 @@
 'use client'
 
 import Image from "next/image"
+import nextLogo from "@/public/click_logo_black.png"
 import { ChatBubbleOvalLeftEllipsisIcon } from "@heroicons/react/24/outline"
 import { Cog8ToothIcon } from "@heroicons/react/24/outline"
 import Link from "next/link"
@@ -17,7 +18,7 @@ export default function Navbar() {
             <h1 className="text-2xl">
                 <Link href="/">
                     <div className="cursor-pointer hover:-translate-y-1 transition-transform duration-300">
-                        <Image src="/click_logo_black.png" width={90} height={100} alt="Cliq logo" />
+                        <Image src={nextLogo} width={90} height={100} alt="Cliq logo" />
                     </div>
                 </Link>
             </h1>
