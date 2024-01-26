@@ -17,7 +17,7 @@ export default function Navbar() {
             <h1 className="text-2xl">
                 <Link href="/">
                     <div className="cursor-pointer hover:-translate-y-1 transition-transform duration-300">
-                        <Image src="/click_logo_black.png" width={90} height={100} alt="Cliq logo" />
+                        <img src="/click_logo_black.png" width={90} height={100} alt="Cliq logo" />
                     </div>
                 </Link>
             </h1>
