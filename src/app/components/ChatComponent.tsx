@@ -183,20 +183,26 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
 
                 {/* Message Display Area */}
                 <div className="flex-1 overflow-y-auto p-3 space-y-2" style={{ maxHeight: 'calc(100% - 4rem)' }} ref={messagesEndRef}>
-                    {activeChat && organizedChats[activeChat] && organizedChats[activeChat].map((msg, index) => (
-                        <div key={index} className={`flex flex-col ${msg.sender_id === sessionUser.userId ? "items-end" : "items-start"}`}>
-                            <div className={`max-w-xs md:max-w-md lg:max-w-lg p-2 rounded-lg ${msg.sender_id === sessionUser.userId ? "bg-gradient-to-r from-indigo-400 to-indigo-400 text-white" : "bg-gradient-to-r from-pink-300 to-pink-300 text-white"}`}>
-                                {msg.message}
+                    {activeChat && organizedChats[activeChat] ? (
+                        organizedChats[activeChat].map((msg, index) => (
+                            <div key={index} className={`flex flex-col ${msg.sender_id === sessionUser.userId ? "items-end" : "items-start"}`}>
+                                <div className={`max-w-xs md:max-w-md lg:max-w-lg p-2 rounded-lg ${msg.sender_id === sessionUser.userId ? "bg-gradient-to-r from-indigo-400 to-indigo-400 text-white" : "bg-gradient-to-r from-pink-300 to-pink-300 text-white"}`}>
+                                    {msg.message}
+                                </div>
+                                <span className="text-xs text-gray-500 mt-1">
+                                    {
+                                        msg.xata?.updatedAt
+                                            ? new Date(msg.xata.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                            : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                    }
+                                </span>
                             </div>
-                            <span className="text-xs text-gray-500 mt-1">
-                                {
-                                    msg.xata?.updatedAt
-                                        ? new Date(msg.xata.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                        : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                }
-                            </span>
+                        ))
+                    ) : (
+                            <div className="text-center pt-52 text-3xl text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>
+                            Select a chat to view it here!
                         </div>
-                    ))}
+                    )}
                 </div>
 
 

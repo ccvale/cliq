@@ -24,12 +24,18 @@ export default function Navbar() {
                     isLoaded && user && (
                         <>
                             <Link href="/chat">
-                                <ChatBubbleOvalLeftEllipsisIcon className="text-black-400 w-10 h-10" />
+                                <div className="cursor-pointer hover:-translate-y-1 transition-transform duration-300">
+                                    <ChatBubbleOvalLeftEllipsisIcon className="text-black-400 w-10 h-10" />
+                                </div>
                             </Link>
                             <Link href="/settings">
-                                <Cog8ToothIcon className="text-black-400 w-10 h-10" />
+                                <div className="cursor-pointer hover:-translate-y-1 transition-transform duration-300">
+                                    <Cog8ToothIcon className="text-black-400 w-10 h-10" />
+                                </div>
                             </Link>
-                            <UserButton afterSignOutUrl='/' userProfileUrl='/profile'/>
+                            <div className="cursor-pointer hover:-translate-y-1 transition-transform duration-300">
+                                <UserButton afterSignOutUrl='/' />
+                            </div>
                         </>
                     )
                 }
