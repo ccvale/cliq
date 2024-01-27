@@ -1,13 +1,5 @@
 import React from 'react'
-import Card from '../components/Card'
-import LikeButton from '../components/LikeButton'
-import DislikeButton from '../components/DislikeButton'
-import { generateRandomUser } from '@/lib/generateRandomUser';
-import { auth, clerkClient, currentUser, getAuth } from '@clerk/nextjs/server'
-import { ArrowRightCircleIcon } from '@heroicons/react/24/outline';
-import { ArrowLeftCircleIcon } from '@heroicons/react/24/outline';
-import ArrowUpCircleIcon from '@heroicons/react/24/outline';
-import ArrowDownCircleIcon from '@heroicons/react/24/outline';
+import { clerkClient, currentUser } from '@clerk/nextjs/server'
 import SwipeQueue from '../components/Card';
 import { getXataClient } from '@/xata';
 import geocoding from '@/lib/geocoding';

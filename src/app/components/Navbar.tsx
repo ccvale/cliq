@@ -1,12 +1,10 @@
 'use client'
 
-import Image from "next/image"
-import { ChatBubbleOvalLeftEllipsisIcon } from "@heroicons/react/24/outline"
-import { Cog8ToothIcon } from "@heroicons/react/24/outline"
-import Link from "next/link"
+import { ChatBubbleOvalLeftEllipsisIcon } from '@heroicons/react/24/outline'
+import { Cog8ToothIcon } from '@heroicons/react/24/outline'
+import Link from 'next/link'
 import { useUser } from '@clerk/nextjs'
 import { UserButton } from '@clerk/nextjs'
-import { useEffect } from "react"
 
 
 export default function Navbar() {
@@ -15,7 +13,7 @@ export default function Navbar() {
     return (
         <nav className="flex justify-between items-center py-6 font-bold w-4/5 mx-auto bg-white">
             <h1 className="text-2xl">
-                <Link href="/">
+                <Link href={user ? "/dashboard" : "/"}>
                     <div className="cursor-pointer hover:-translate-y-1 transition-transform duration-300">
                         <img src="/click_logo_black.png" width={90} height={100} alt="Cliq logo" />
                     </div>

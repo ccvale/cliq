@@ -4,6 +4,19 @@ const { parse } = require('url');
 const next = require('next');
 const socketIo = require('socket.io');
 
+/*
+
+The server.js file is the entry point for the server side of the application.
+It creates an express server, a socket.io server, and a next.js app.
+It then sets up the socket.io server to listen for connections and disconnections.
+This is key to the real-time functionality of the messaging aspect of the application.
+
+It also sets up the socket.io server to listen for the sendMessage event and emit the receiveMessage events, which act as follows:
+    - sendMessage: When a client sends a message, the server receives the message and emits a receiveMessage event to the user on the other end.
+    - receiveMessage: When a client receives a message from another user, the client displays the message in the chat window as soon as it's sent.
+    
+*/
+
 const dev = process.env.NODE_ENV !== 'production';
 const nextApp = next({ dev });
 const handle = nextApp.getRequestHandler();

@@ -9,6 +9,7 @@ export default async function Chat() {
     const sessionUserRaw = await xataClient.db.Users.filter({ 'userId': user?.id }).getFirst();
     const sessionUser = { ...sessionUserRaw };
     
+    // getting all messages that the user has sent or received so it can be filtered later based on conversation
     const matchMessages = await xataClient.db.messages.filter({
         $any: [
             { sender_id: sessionUserRaw?.userId },
@@ -16,9 +17,14 @@ export default async function Chat() {
         ]
     }).getAll();
 
+    // is being done to avoid errors re: passing non-serializable data to the client - this is apparently called "sanitizing"
+    const serializedMessages = JSON.stringify(matchMessages);
+    const sanitizedMessages = JSON.parse(serializedMessages);
+
 
     let userDetails: { id: string; userId: string; displayName: string; imageUrl: string; }[] = [];
 
+    // parsing through the matches array (which we formatted in a specific way) to get select user details for each match
     if (sessionUser?.matches) {
         userDetails = sessionUser.matches.map(match => {
             const [id, userId, displayName, imageUrl] = match.split(' - ');
@@ -26,6 +32,7 @@ export default async function Chat() {
         });
     }
 
+    // handling case where user has no matches - we don't want to render the full chat component if there are no matches
     if (!sessionUser?.matches || sessionUser.matches.length === 0) {
         return (
             <div className="flex justify-center items-center h-screen" style={{ paddingBottom: '40vh' }}>
@@ -37,7 +44,8 @@ export default async function Chat() {
         );
     }
 
+    // handling case where user has matches - we *do* want to render the full chat component
     return (
-        <ChatComponent sessionUser={sessionUser} userDetails={userDetails} matchMessages={matchMessages} />
+        <ChatComponent sessionUser={sessionUser} userDetails={userDetails} matchMessages={sanitizedMessages} />
     );
 }

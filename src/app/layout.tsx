@@ -8,7 +8,7 @@ const font = Cabin({weight: '700', subsets: ['latin']})
 
 export const metadata: Metadata = {
   title: 'Cliq | Swipe, Connect & Expand Your Circle',
-  description: 'A social network for quick platonic connections.',
+  description: 'A social network for quick platonic connections',
   icons: {
     icon: '/favicon.ico'
   }

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import useSWRMutation from 'swr/mutation';
 import newMessage from '@/lib/newMessage';
 import updateUser from '@/lib/updateUser';
@@ -25,8 +25,20 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
     const [nMessage, setNewMessage] = useState("");
     const [organizedChats, setOrganizedChats] = useState({});
 
+    const messagesEndRef = useRef(null);
+
     const { trigger } = useSWRMutation('/api/newMessage', newMessage);
     const { trigger: userTrigger } = useSWRMutation('/api/updateUser', updateUser);
+
+    const scrollToBottom = () => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollTop = messagesEndRef.current.scrollHeight;
+        }
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [organizedChats[activeChat]?.length]);
 
     // Organize chat messages by conversation
     useEffect(() => {
@@ -51,7 +63,6 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
 
     useEffect(() => {
         socket.on('receiveMessage', (message) => {
-            console.log("Received message:", message);
             setCurrentChatHistory(prevHistory => [...prevHistory, message]);
             setOrganizedChats(prevChats => ({
                 ...prevChats,
@@ -70,7 +81,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
             const newSentMessage = {
                 sender_id: sessionUser.userId,
                 receiver_id: activeChat,
-                message: nMessage,
+                message: nMessage
             };
 
             // Update the currentChatHistory
@@ -128,8 +139,8 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
     return (
         <div className="flex h-screen">
             {/* Left panel */}
-            <div className="w-2/3 bg-gray-50 border-r border-gray-200 p-4 overflow-y-auto">
-                <h1 className="text-2xl font-bold text-gray-800 mb-6">Chats</h1>
+            <div className="w-2/3 bg-gradient-to-r from-pink-300 to-indigo-400 p-4 overflow-y-auto shadow-lg rounded-lg">
+                <h1 className="text-2xl font-bold text-white mb-6">Chats</h1>
                 <div>
                     {userDetails.map((user, index) => {
                         const lastMessage = organizedChats[user.userId] ? organizedChats[user.userId][organizedChats[user.userId].length - 1] : null;
@@ -142,18 +153,18 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
                                 <img src={user.imageUrl} alt={user.displayName} className="h-12 w-12 rounded-full mr-3" />
                                 <div className="flex flex-col flex-grow">
                                     <div className="flex justify-between">
-                                        <p className="font-medium">{user.displayName}</p>
-                                        <p className="text-xs text-gray-500">{lastMessageTime}</p>
+                                        <p className="font-medium text-white">{user.displayName}</p>
+                                        <p className="text-xs text-white">{lastMessageTime}</p>
                                     </div>
                                     {lastMessage && (
-                                        <p className="text-sm text-gray-600">{lastMessage.message}</p>
+                                        <p className="text-sm text-white">{lastMessage.message}</p>
                                     )}
                                 </div>
                                 <button onClick={(e) => {
                                     e.stopPropagation(); // Prevents triggering setActiveChat
                                     handleUnmatchUser(user);
                                 }} className="p-1 rounded-full hover:bg-gray-100">
-                                    <XCircleIcon className="h-6 w-6 text-red-500" />
+                                    <XCircleIcon className="h-6 w-6 text-indigo-500" />
                                 </button>
                             </div>
                         );
@@ -171,27 +182,49 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
                 )}
 
                 {/* Message Display Area */}
-                <div className="flex-1 overflow-y-auto p-3 space-y-2" style={{ maxHeight: 'calc(100% - 4rem)' }}>
+                <div className="flex-1 overflow-y-auto p-3 space-y-2" style={{ maxHeight: 'calc(100% - 4rem)' }} ref={messagesEndRef}>
                     {activeChat && organizedChats[activeChat] && organizedChats[activeChat].map((msg, index) => (
-                        <div key={index} className={`flex ${msg.sender_id === sessionUser.userId ? "justify-end" : ""}`}>
+                        <div key={index} className={`flex flex-col ${msg.sender_id === sessionUser.userId ? "items-end" : "items-start"}`}>
                             <div className={`max-w-xs md:max-w-md lg:max-w-lg p-2 rounded-lg ${msg.sender_id === sessionUser.userId ? "bg-gradient-to-r from-indigo-400 to-indigo-400 text-white" : "bg-gradient-to-r from-pink-300 to-pink-300 text-white"}`}>
                                 {msg.message}
                             </div>
+                            <span className="text-xs text-gray-500 mt-1">
+                                {
+                                    msg.xata?.updatedAt
+                                        ? new Date(msg.xata.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                        : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                }
+                            </span>
                         </div>
                     ))}
                 </div>
 
+
                 {/* Typing Area */}
                 {activeChat !== null && (
                     <div className="p-3 border-t border-gray-300 flex bg-white">
-                        <input type="text" value={nMessage} onChange={e => setNewMessage(e.target.value)}
+                        <input
+                            type="text"
+                            value={nMessage}
+                            onChange={e => setNewMessage(e.target.value)}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault(); // Prevents the default action of the enter key
+                                    handleSendMessage();
+                                }
+                            }}
                             className="flex-1 p-2 border border-gray-300 rounded-lg mr-2"
-                            placeholder="Type a message..."/>
-                        <button onClick={handleSendMessage} className="bg-gradient-to-r from-indigo-400 to-indigo-400 text-white px-4 py-2 rounded-lg hover:from-indigo-300 hover:to-indigo-300">
+                            placeholder="Type a message..."
+                        />
+                        <button
+                            onClick={handleSendMessage}
+                            className="bg-gradient-to-r from-indigo-400 to-indigo-400 text-white px-4 py-2 rounded-lg hover:from-indigo-300 hover:to-indigo-300"
+                        >
                             Send
                         </button>
                     </div>
                 )}
+
             </div>
         </div>
     );

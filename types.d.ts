@@ -1,6 +1,7 @@
+// This is where a majority of the remaining logic for the generated test data calculations are stored...these are no longer used
+
 export const paletteOptions: string[] = ['Slate', 'Orange', 'Gray', 'Yellow', 'Zinc', 'Green', 'Neutral', 'Blue', 'Stone', 'Indigo', 'Red', 'Purple', 'Pink', 'Amber', 'Cyan', 'Violet', 'Lime', 'Rose', 'Teal'];
 
-// eventually have to handle images
 export type User = {
     name: string,
     age: number,

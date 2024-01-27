@@ -1,10 +1,8 @@
 'use client'
-import React, { use, useEffect, useState } from 'react';
-import { UsersRecord, XataClient, getXataClient } from '@/xata';
+import React, { useEffect, useState } from 'react';
+import { UsersRecord } from '@/xata';
 import { JSONData } from '@xata.io/client';
 import updateUser from '../../lib/updateUser';
-// import SubmitButton from './SubmitButton';
-import useSWR from 'swr'
 import useSWRMutation from 'swr/mutation'
 
 interface MyComponentProps {

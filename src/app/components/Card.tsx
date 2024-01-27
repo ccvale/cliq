@@ -2,19 +2,16 @@
 
 import React, { useEffect, useState } from 'react';
 import TinderCard from 'react-tinder-card';
-import { User } from '../../../types';
 import Image from 'next/image';
 import GlobeAltIcon from '@heroicons/react/24/outline/esm/GlobeAltIcon'; // location
 import BriefcaseIcon from '@heroicons/react/24/outline/esm/BriefcaseIcon'; // position
 import haversine from 'haversine-distance';
 import geocoding from '@/lib/geocoding';
-import { getFilteredUsers } from '@/lib/getFilteredUsers';
-import { clerkClient } from '@clerk/nextjs';
 import useSWRMutation from 'swr/mutation';
 import updateUser from '@/lib/updateUser';
 import { ArrowLeftCircleIcon, ArrowRightCircleIcon } from '@heroicons/react/24/outline';
 
-
+// should get accurate types for these props - for now this works
 type Props = {
     sessionUser: any,
     filteredUsers: any // its an array of JSON objects
@@ -141,57 +138,55 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
                 - If the user swipes right on a user, and that user has already liked the user, that user is added to both users matches array.
         */
         
-        setCurrentIndex(currentIndex + 1); // Move to the next card in the queue
+        if (!(currentIndex >= users.length)) {
+            setCurrentIndex(currentIndex + 1); // Move to the next card in the queue
 
-        // Update the user's swipe history
-        if (direction === 'right') {
-            setRightSwipes(prev => prev + 1);
-            const liked = users[currentIndex];
-            const isMatch = liked.likes?.includes(sessionUser.userId) || false; // if other user has this user in likes already, its a match (both users have liked each other)
-            // we want to add the user id to the sessionUser's liked array, then also check for match...if match, add to matches array
-            const sessionUserLike = sessionUser.likes
-                ? [...sessionUser.likes, liked.userId]
-                : [liked.userId];
-            
-            const updatedSessionData = {
-                id: sessionUser.id,
-                likes: sessionUserLike,
-                matches: isMatch
-                    ? (sessionUser.matches
-                        ? [...sessionUser.matches, `${liked.id} - ${liked.userId} - ${liked.display_name} - ${liked.image}`]
-                        : [`${liked.id} - ${liked.userId} - ${liked.display_name} - ${liked.image}`])
-                    : sessionUser.matches
-            };
+            // Update the user's swipe history
+            if (direction === 'right') {
+                setRightSwipes(prev => prev + 1);
+                const liked = users[currentIndex];
+                const isMatch = liked.likes?.includes(sessionUser.userId) || false; // if other user has this user in likes already, its a match (both users have liked each other)
+                // we want to add the user id to the sessionUser's liked array, then also check for match...if match, add to matches array
+                const sessionUserLike = sessionUser.likes
+                    ? [...sessionUser.likes, liked.userId]
+                    : [liked.userId];
 
-            const updatedOtherData = {
-                id: liked.id,
-                matches: isMatch
-                    ? (liked.matches
-                        ? [...liked.matches, `${sessionUser.id} - ${sessionUser.userId} - ${sessionUser.display_name} - ${sessionUser.image}`]
-                        : [`${sessionUser.id} - ${sessionUser.userId} - ${sessionUser.display_name} - ${sessionUser.image}`])
-                    : liked.matches
-            };
+                const updatedSessionData = {
+                    id: sessionUser.id,
+                    likes: sessionUserLike,
+                    matches: isMatch
+                        ? (sessionUser.matches
+                            ? [...sessionUser.matches, `${liked.id} - ${liked.userId} - ${liked.display_name} - ${liked.image}`]
+                            : [`${liked.id} - ${liked.userId} - ${liked.display_name} - ${liked.image}`])
+                        : sessionUser.matches
+                };
 
-            
-            const sessionUserLikeUpdate = await trigger(updatedSessionData);
-            const otherUserLikeUpdate = await trigger(updatedOtherData);
-        }
-        else if (direction === 'left') {
-            setLeftSwipes(prev => prev + 1);
-        }
+                const updatedOtherData = {
+                    id: liked.id,
+                    matches: isMatch
+                        ? (liked.matches
+                            ? [...liked.matches, `${sessionUser.id} - ${sessionUser.userId} - ${sessionUser.display_name} - ${sessionUser.image}`]
+                            : [`${sessionUser.id} - ${sessionUser.userId} - ${sessionUser.display_name} - ${sessionUser.image}`])
+                        : liked.matches
+                };
+
+
+                const sessionUserLikeUpdate = await trigger(updatedSessionData);
+                const otherUserLikeUpdate = await trigger(updatedOtherData);
+            }
+            else if (direction === 'left') {
+                setLeftSwipes(prev => prev + 1);
+            }
+        };
+
     };
 
-    const outOfFrame = (name) => {
-        //console.log(`${name} left the screen!`);
-        if (currentIndex >= users.length - 1) {
-            // Logic when all users are swiped, e.g., reload users
-        }
-    };
 
+    // bottom of the page 'session stats' calculations
     const totalSwipes = rightSwipes + leftSwipes;
     const swipePercentage = totalSwipes > 0 ? Math.round((rightSwipes / totalSwipes) * 100) : 0;
-    let swipeMessage = '';
 
+    let swipeMessage = ''; // maybe have multiple messages to randomly choose from?
     if (swipePercentage < 20) {
         swipeMessage = 'Maybe try being less picky!';
     } else if (swipePercentage < 50) {
@@ -208,7 +203,6 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
                 <TinderCard
                     key={users[currentIndex].userId}
                     onSwipe={(dir) => swiped(dir)}
-                    onCardLeftScreen={() => outOfFrame(users[currentIndex].userId)}
                     preventSwipe={['up', 'down']}
                 >
                     <UserCard user={users[currentIndex]} distanceTag={distanceTags[currentIndex]} />
@@ -220,9 +214,13 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
                         <p className="text-lg">If you&apos;re new here, you should update your settings first and try again!</p>
                 </div>
             )}
-        <div className="flex flex-row justify-center items-center mx-auto -mt-8 gap-56">
-                <ArrowLeftCircleIcon className="text-red-400 w-14 h-14" />
-                <ArrowRightCircleIcon className="text-green-400 w-14 h-14" />
+            <div className="flex flex-row justify-center items-center mx-auto -mt-8 gap-56">
+                <button onClick={() => swiped('left')}>
+                    <ArrowLeftCircleIcon className="text-red-400 w-14 h-14" />
+                </button>
+                <button onClick={() => swiped('right')}>
+                    <ArrowRightCircleIcon className="text-green-400 w-14 h-14" />
+                </button>
             </div>
             <div>
                 <section className="flex flex-col justify-center items-center text-center p-5">
@@ -236,6 +234,22 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
 }
 
 function calculateAge(user) {
+    /*
+        NAME
+
+            calculateAge - calculates the age of the user
+
+        SYNOPSIS
+
+            calculateAge(user)
+                - user: JSON object - the user whose age is being calculated
+
+        DESCRIPTION
+
+            This function will calculate the age of the user.
+            It will return the age of the user.
+    */
+    
     const today = new Date();
     const birthday = new Date(user.birthday);
     let ageThisYear = today.getFullYear() - birthday.getFullYear();
@@ -278,6 +292,25 @@ function UserCard({ user, distanceTag }) {
 }
 
 async function calculateDistanceBetweenTowns(town1: string, town2: string): Promise<number> {
+    /*
+        NAME
+
+            calculateDistanceBetweenTowns - calculates the distance between two towns
+
+        SYNOPSIS
+
+            calculateDistanceBetweenTowns(town1, town2)
+                - town1: string - the first town
+                - town2: string - the second town
+
+        DESCRIPTION
+
+            This function will calculate the distance between two towns.
+            It will return the distance between the two towns, in miles.
+            This function will return -999 if the distance cannot be calculated.
+            This function is using a `geocoding` API to get the coordinates of the towns, and then using the `haversine` library to calculate the distance.
+    */
+    
     const town1Coordinates = await geocoding(town1);
     const town2Coordinates = await geocoding(town2);
     if (!town1Coordinates || !town2Coordinates) {
