@@ -8,6 +8,20 @@ import { UserButton } from '@clerk/nextjs'
 
 
 export default function Navbar() {
+    /*
+        NAME
+
+            Navbar - component for the navigation bar at the top of the page
+
+        SYNOPSIS
+
+            Navbar()
+
+        DESCRIPTION
+
+            This function returns code to render the navigation bar at the top of the page. It uses the useUser hook from Clerk to determine if the user is signed in or not. If they are signed in, they will see the chat, settings, and sign out buttons. If they are not signed in, they will see the sign in button. Also, the logo is a link to the dashboard if the user is signed in, and a link to the home page if the user is not signed in, because the dashboard is the main page of the application when the user is signed in, and the home page is the main page of the application when the user is not signed in.
+    */
+    
     const { user, isLoaded } = useUser();
 
     return (

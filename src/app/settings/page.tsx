@@ -1,18 +1,29 @@
-import { UsersRecord, getXataClient } from '@/xata';
-import { auth, currentUser } from '@clerk/nextjs/server';
-import React, { useEffect, useState } from 'react'
-import { redirect, useRouter } from 'next/navigation';
-import { useUser } from '@clerk/nextjs';
-//import { paletteOptions } from '../../../types'
+import { getXataClient } from '@/xata';
+import { auth } from '@clerk/nextjs/server';
+import React from 'react'
 import SettingsPage from '../components/SettingsPage';
 import { revalidatePath } from 'next/cache';
 
 export default async function Settings() {
+  /*
+        NAME
+
+            Settings - function that is responsible for all the logic being passed to the settings page
+
+        SYNOPSIS
+
+            Settings()
+
+        DESCRIPTION
+
+            This function is responsible for getting the current user, and then rendering the settings page with the user's data. It also handles the case where the user doesn't exist in the xata database, and adds them to the database. We are doing this because the user is authenticated and exists in the clerk database, but we want to add them to the xata database so that we can store their preferences and other data. In many cases (such as this one), to access the data that relates to user settings for the card, we need to use the xata database, because the clerk database doesn't have this data. To do this, we need to acquire the user id from the clerk database, and use that to obtain the information for the xata user. The record is serialized so that it can be passed to the settings page without causing errors. 
+    */
+  
   const { userId } = auth();
   const xataClient = getXataClient();
   const fetchedUser = await xataClient.db.Users.filter({ 'userId': userId }).getFirst();
   
-    
+    // if the user doesn't exist in the xata database, we want to add them (they are authenticated and exist in the clerk database first)
     if (!fetchedUser) {
         await xataClient.db.Users.create({userId});
         revalidatePath('/settings');
@@ -21,6 +32,6 @@ export default async function Settings() {
     const record = fetchedUser.toSerializable();
            
   return (
-    <SettingsPage record={record} cid={userId} />
+    <SettingsPage record={record}/>
   )
 }

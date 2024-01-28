@@ -7,12 +7,14 @@ import getUser from '@/lib/getUser';
 import { XCircleIcon } from '@heroicons/react/24/outline';
 import io from 'socket.io-client';
 
+// again, should get the types for these props
 type Props = {
     sessionUser: any,
     userDetails: any,
     matchMessages: any
 }
 
+// set up socket connection
 const socket = io('https://cliq-app-ae230a8c05bd.herokuapp.com/', {
     path: '/socket.io',
     transports: ['websocket'],
@@ -25,10 +27,11 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
     const [nMessage, setNewMessage] = useState("");
     const [organizedChats, setOrganizedChats] = useState({});
 
-    const messagesEndRef = useRef(null);
-
     const { trigger } = useSWRMutation('/api/newMessage', newMessage);
     const { trigger: userTrigger } = useSWRMutation('/api/updateUser', updateUser);
+
+    // the next handful of lines are to make sure that when a chat window is opened, it opens up to the latest messages
+    const messagesEndRef = useRef(null);
 
     const scrollToBottom = () => {
         if (messagesEndRef.current) {
@@ -40,7 +43,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
         scrollToBottom();
     }, [organizedChats[activeChat]?.length]);
 
-    // Organize chat messages by conversation
+    // organizing chats to associate each chat with the user it is with
     useEffect(() => {
         const chats = {};
         matchMessages.forEach(message => {
@@ -54,13 +57,14 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
     }, [matchMessages, sessionUser.userId]);
 
 
-    // Load chat history when active chat changes
+    // used to set the current chat history to the active chat (the chat that the user has selected)
     useEffect(() => {
         if (activeChat !== null) {
             setCurrentChatHistory(organizedChats[activeChat] || []);
         }
     }, [activeChat, organizedChats]);
 
+    // this is the socket listener that listens for new messages from the server (live updates, basically)
     useEffect(() => {
         socket.on('receiveMessage', (message) => {
             setCurrentChatHistory(prevHistory => [...prevHistory, message]);
@@ -109,8 +113,6 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
 
     const handleUnmatchUser = async (user) => {
         if (window.confirm(`Are you sure you would like to unmatch ${user.displayName}?`)) {
-            // Implement the logic to unmatch the user
-            // Example: await unmatchUser(userId);
 
             // remove each other from matches
             const sessionUpdatedMatches = sessionUser.matches.filter(item => !item.includes(user.id));
@@ -130,9 +132,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
             await userTrigger(matchUpdatedUser);
 
 
-            window.location.reload(); // Simple page refresh
-            // Or update state to remove user from the list without refreshing
-
+            window.location.reload(); // reloading the page to reflect the change in matches
         }
     };
 
@@ -161,7 +161,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
                                     )}
                                 </div>
                                 <button onClick={(e) => {
-                                    e.stopPropagation(); // Prevents triggering setActiveChat
+                                    e.stopPropagation(); // prevents triggering the onClick event
                                     handleUnmatchUser(user);
                                 }} className="p-1 rounded-full hover:bg-gray-100">
                                     <XCircleIcon className="h-6 w-6 text-indigo-500" />

@@ -1,13 +1,13 @@
 'use client'
+
 import React, { useEffect, useState } from 'react';
 import { UsersRecord } from '@/xata';
 import { JSONData } from '@xata.io/client';
 import updateUser from '../../lib/updateUser';
 import useSWRMutation from 'swr/mutation'
 
-interface MyComponentProps {
-    record: JSONData<UsersRecord>,
-    cid: string
+interface props {
+    record: JSONData<UsersRecord>;
 }
 
 // these are the color options for the palette - all tailwind compatible colors
@@ -16,7 +16,7 @@ const paletteOptions = ['Slate', 'Orange', 'Gray', 'Yellow', 'Zinc', 'Green', 'N
 // would add more of these in a real app, but since this is a project, I'm just going to leave it at this selection
 const interestOptions = ['Art', 'Business', 'Education', 'Entertainment', 'Fashion', 'Finance', 'Food', 'Health', 'History', 'Lifestyle', 'Music', 'News', 'Politics', 'Science', 'Sports', 'Technology', 'Travel', 'Video Games', 'Yoga', 'Writing', 'Working Out', 'Gardening', 'TV', 'Singing', 'Fishing'];
 
-export default function SettingsPage({ record, cid }: MyComponentProps) {
+export default function SettingsPage({ record }: props) {
     /*
         NAME
 
@@ -26,7 +26,6 @@ export default function SettingsPage({ record, cid }: MyComponentProps) {
 
             SettingsPage({ record, cid })
                 - record: JSONData<UsersRecord> - the record of the session user
-                - cid: string - the id of the session user
 
         DESCRIPTION
 

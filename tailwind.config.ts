@@ -1,5 +1,9 @@
 import type { Config } from 'tailwindcss'
 
+// Most of this is generated for us, but the safelist, for example, was added manually to allow for dynamic classes.
+// In instances where we are generating color schemes based on user preferences, we need to define these possible classes here so
+// that Tailwind doesn't "purge" them from the final CSS, and it can be used in the app. (Things get weird if you don't do this)
+
 const config: Config = {
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',

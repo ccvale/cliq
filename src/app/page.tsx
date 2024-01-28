@@ -4,6 +4,21 @@ import { redirect } from 'next/navigation';
 
 export default function Home() {
 
+  /*
+        NAME
+
+            Home - the home page of the application
+
+        SYNOPSIS
+
+            Home()
+
+        DESCRIPTION
+
+            The home page of the application; this is the first page the user will see when they visit the site. Users are greeted with a message explaining that they can make friends easily with Cliq, and a button that will redirect them to sign in or sign up, depending on whether or not they are using the application for the first time.
+    */
+
+  // Check if the user is already signed in - if they are, redirect them to the dashboard (users have no need to access the home page if they are already signed in)
   const { userId } = auth();
 
   if (userId) {

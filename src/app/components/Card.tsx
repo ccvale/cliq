@@ -191,10 +191,10 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
         swipeMessage = 'Maybe try being less picky!';
     } else if (swipePercentage < 50) {
         swipeMessage = 'Quality over quantity, huh?';
-    } else if (swipePercentage < 80) {
-        swipeMessage = 'Keep up the swiping!';
-    } else {
+    } else if (swipePercentage < 99) {
         swipeMessage = 'You sure are friendly!';
+    } else  {
+        swipeMessage = 'YOU A THOT ASS NIGGA!!!';
     }
 
     return (
