@@ -9,12 +9,12 @@ import useSWRMutation from 'swr/mutation';
 import updateUser from '@/lib/updateUser';
 import { ArrowLeftCircleIcon, ArrowRightCircleIcon } from '@heroicons/react/24/outline';
 import calculateAge from '@/lib/calculateAge';
-import scoringAlgorithm from '@/lib/scoring';
 import calculateDistanceBetweenTowns from '@/lib/calculateDistanceBetweenTowns';
+import { UsersRecord } from '@/xata';
 
 // should get accurate types for these props - for now this works
 type Props = {
-    sessionUser: any,
+    sessionUser: UsersRecord,
     filteredUsers: any // its an array of JSON objects
 }
 

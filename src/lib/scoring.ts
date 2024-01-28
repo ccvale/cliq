@@ -1,6 +1,8 @@
+import { UsersRecord } from "@/xata";
 import calculateAge from "./calculateAge";
 
-export default function scoringAlgorithm(sessionUser: any, users: any[]) {
+// fix the typing for the users array
+export default function scoringAlgorithm(sessionUser: UsersRecord, users: any[]) {
     /*
         NAME
 
@@ -14,46 +16,48 @@ export default function scoringAlgorithm(sessionUser: any, users: any[]) {
 
         DESCRIPTION
 
-            This function calculates a very simple/basic relevance score for each user. Deciding factors include age similarity, interest similarity, with extra points to those in the same town, work at the same company, or have the same job position. The score is calculated by adding points for each similarity and subtracting points for each difference. This orders the users by "relevance" and allows us to display the most relevant users first.
+            This function calculates a very simple/basic relevance score for each user. Deciding factors include age similarity, interest similarity, with extra points to those in the same town, work at the same company, or have the same job position. Most importantly, a big boost to users who have already liked the session user, and they will have a big chance to get to the top of the session users swipe queue. The score is calculated by adding points for each similarity and subtracting points for each difference. This orders the users by "relevance" and allows us to display the most relevant users first.
     */
 
     users.forEach( (user) => {
         // the things we care about: age similarity (10 points for match, -1 for each age different), interest matching (10 points per match)
         user['score'] = 0; // initialize the score to 0
 
-        // age similarity - we don't *really* care about age due to age filtering, but this is a good way to give a slight boost to people who are the same age
-        const ageDifference = Math.abs(calculateAge(sessionUser) - calculateAge(user));
-        if (ageDifference === 0) {
-            user['score'] += 10;
-        } else {
-            user['score'] -= ageDifference;
+        // if the other user has sent a like to the session user, give them a *big boost*
+        if (user?.likes?.includes(sessionUser.userId)) {
+            user['score'] += 50;
         }
 
-        // interest matching
-        const interests = [user['primary_interest'], user['secondary_interest'], user['third_interest']];
-        const sessionInterests = [sessionUser['primary_interest'], sessionUser['secondary_interest'], sessionUser['third_interest']];
+        // age similarity - we don't *really* care about age due to age filtering, but this is a good way to give a slight boost to people who are the same age
+        const ageDifference = Math.abs(calculateAge(sessionUser) - calculateAge(user));
+        if (ageDifference < 10) {
+            user['score'] -= ageDifference;
+        } else {
+            user['score'] -= ageDifference * 2;
+        }
 
-        // iterate through the interests and compare them
-        interests.forEach(interest => {
-            if (sessionInterests.includes(interest)) {
-                user['score'] += 10;
-            }
-        });
+        // interest matching - 10 points per common interest
+        const combinedInterests = new Set([sessionUser.primary_interest, sessionUser.secondary_interest, sessionUser.third_interest, user.primary_interest, user.secondary_interest, user.third_interest]);
+
+        user['score'] += combinedInterests.size < 3 ? combinedInterests.size * 10 : 50; // bonus if all 3 interests match
 
         // again, we don't *really* care about location due to location filtering, but we'll give 5 points if they're in the same town to give a boost to people who we know are close to the user without having to calculate distance again
         if (sessionUser.location === user.location) {
             user['score'] += 5;
         }
 
-        // in similar fashion, if they work at the same company or have the same job position, we'll give another quick win
-        if (sessionUser.job_company === user.job_company) {
+        // in similar fashion, if they work at the same company or have the same job position, we'll give another quick win, with a boost to people who work at the same company and have the same job position
+        if ((sessionUser.job_position === user.job_position) && (sessionUser.job_company === user.job_company)) {
+            user['score'] += 20;
+        }
+
+        else if (sessionUser.job_company === user.job_company) {
             user['score'] += 5;
         }
 
-        if (sessionUser.job_position === user.job_position) {
+        else if (sessionUser.job_position === user.job_position) {
             user['score'] += 5;
         }
-
     });
 
     // sort the array by score

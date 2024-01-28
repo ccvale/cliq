@@ -22,8 +22,7 @@ export default function Home() {
   const { userId } = auth();
 
   if (userId) {
-    console.log(userId);
-    redirect("/dashboard")
+    redirect('/dashboard')
   }
 
   return (

@@ -30,6 +30,10 @@ This project is ambitious, and has a lot of additional exciting features that ha
 
   - These cards will exist in a “swipe queue”, where they will show up one at a time, where the user can observe and interact with the card and determine whether or not this user is a potential friend they would like to have ✅
 
+  - Users that have swiped right on a given user will move up in that users swipe queue to ensure that they are seen quicker (given priority) with the goal of making quicker matches ✅
+
+  - Users that match other aspects of the session users profile will also get a boost in swipe queue placement (ex. several matching interests) ✅
+
   - Users can swipe right (to like), or swipe left (to discard) on these cards as they wish ✅
 
   - If both users have swiped right on each other, a match has occurred; both users will be notified, and they can now chat with each other ✅

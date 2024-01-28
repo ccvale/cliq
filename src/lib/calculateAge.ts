@@ -1,4 +1,6 @@
-export default function calculateAge(user) {
+import { UsersRecord } from "@/xata";
+
+export default function calculateAge(user: UsersRecord): number {
     /*
         NAME
 
