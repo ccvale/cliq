@@ -5,11 +5,12 @@ import TinderCard from 'react-tinder-card';
 import Image from 'next/image';
 import GlobeAltIcon from '@heroicons/react/24/outline/esm/GlobeAltIcon'; // location
 import BriefcaseIcon from '@heroicons/react/24/outline/esm/BriefcaseIcon'; // position
-import haversine from 'haversine-distance';
-import geocoding from '@/lib/geocoding';
 import useSWRMutation from 'swr/mutation';
 import updateUser from '@/lib/updateUser';
 import { ArrowLeftCircleIcon, ArrowRightCircleIcon } from '@heroicons/react/24/outline';
+import calculateAge from '@/lib/calculateAge';
+import scoringAlgorithm from '@/lib/scoring';
+import calculateDistanceBetweenTowns from '@/lib/calculateDistanceBetweenTowns';
 
 // should get accurate types for these props - for now this works
 type Props = {
@@ -51,6 +52,7 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
 
 
     useEffect(() => {
+        //setUsers(scoringAlgorithm(sessionUser, filteredUsers));
         setUsers(filteredUsers);
         setDistanceTags(new Array(filteredUsers.length).fill('Calculating distance...')); // is needed to prevent the distance tag from being undefined
 
@@ -233,34 +235,6 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
     );
 }
 
-function calculateAge(user) {
-    /*
-        NAME
-
-            calculateAge - calculates the age of the user
-
-        SYNOPSIS
-
-            calculateAge(user)
-                - user: JSON object - the user whose age is being calculated
-
-        DESCRIPTION
-
-            This function will calculate the age of the user.
-            It will return the age of the user.
-    */
-    
-    const today = new Date();
-    const birthday = new Date(user.birthday);
-    let ageThisYear = today.getFullYear() - birthday.getFullYear();
-
-    // Adjust age if the user hasn't had their birthday yet this year
-    if (today < new Date(today.getFullYear(), birthday.getMonth(), birthday.getDate())) {
-        ageThisYear--;
-    }
-    return ageThisYear;
-}
-
 function UserCard({ user, distanceTag }) {
     const ageThisYear = calculateAge(user);
 
@@ -289,34 +263,4 @@ function UserCard({ user, distanceTag }) {
             </div>
         </div>
     );
-}
-
-async function calculateDistanceBetweenTowns(town1: string, town2: string): Promise<number> {
-    /*
-        NAME
-
-            calculateDistanceBetweenTowns - calculates the distance between two towns
-
-        SYNOPSIS
-
-            calculateDistanceBetweenTowns(town1, town2)
-                - town1: string - the first town
-                - town2: string - the second town
-
-        DESCRIPTION
-
-            This function will calculate the distance between two towns.
-            It will return the distance between the two towns, in miles.
-            This function will return -999 if the distance cannot be calculated.
-            This function is using a `geocoding` API to get the coordinates of the towns, and then using the `haversine` library to calculate the distance.
-    */
-    
-    const town1Coordinates = await geocoding(town1);
-    const town2Coordinates = await geocoding(town2);
-    if (!town1Coordinates || !town2Coordinates) {
-        return -999;
-    }
-
-    const distance = haversine({ lat: town1Coordinates[0], lng: town1Coordinates[1] }, { lat: town2Coordinates[0], lng: town2Coordinates[1] });
-    return Math.round(distance * 0.000621371); // Convert to miles and round off
 }

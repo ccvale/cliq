@@ -48,7 +48,7 @@ This project is ambitious, and has a lot of additional exciting features that ha
 
 ## Future Features
 
-In a project of this scale, there are many other features that I would like to implement, but due to time constraints, I was unable to do so. These features are as follows:
+In a project of this scale, there are many other features that I would like to implement, but due to time constraints, I was unable to do so. Those features include:
 
 - **Further profile customization**
 
@@ -56,9 +56,9 @@ In a project of this scale, there are many other features that I would like to i
 
   - Ability to add a featured song to a user profile (similar to Tinder’s anthem feature; scrapped due to the idea not being unique enough - could come back with highlighting a TV show, if the right API is found to support this)
 
-  - Using current location to determine distance from other users, rather than having to manually enter a location in settings
+  - Using current location to determine distance from other users, rather than using a set 'home location' (would be better suited for a mobile app though)
 
-  - "Achievements" - a way for users to show off their accomplishments on the platform, such as "First Match", "First Message", "First Block", etc.
+  - `Achievements` - a way for users to show off their accomplishments on the platform, such as "First Match", "First Message", "First Block", etc. Could be a fun way to gamify the platform, and encourage users to use the app more, and would be implemented with a `badge` system, where users can display their achievements on their profile
 
 
 - **Additional chat features**
@@ -66,4 +66,3 @@ In a project of this scale, there are many other features that I would like to i
   - Ability to send other types of media (images, gifs, etc.)
 
   - Display an indicator when a user is typing, has read a message, or is currently online
-

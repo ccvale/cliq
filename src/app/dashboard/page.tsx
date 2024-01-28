@@ -2,8 +2,9 @@ import React from 'react'
 import { clerkClient, currentUser } from '@clerk/nextjs/server'
 import SwipeQueue from '../components/Card';
 import { getXataClient } from '@/xata';
-import geocoding from '@/lib/geocoding';
-import haversine from 'haversine-distance';
+import calculateAge from '@/lib/calculateAge';
+import calculateDistanceBetweenTowns from '@/lib/calculateDistanceBetweenTowns';
+import scoringAlgorithm from '@/lib/scoring';
 
 /**
  * When the user is authenticated, this is the page they will see.
@@ -14,29 +15,6 @@ import haversine from 'haversine-distance';
  */
 
 // we will want to load in the user auth, and the xata client, and filter by users in a near location, then send those users to the card component
-
-async function calculateDistanceBetweenTowns(town1: string, town2: string): Promise<number> {
-  const town1Coordinates = await geocoding(town1);
-  const town2Coordinates = await geocoding(town2);
-  if (!town1Coordinates || !town2Coordinates) {
-    return -999;
-  }
-
-  const distance = haversine({ lat: town1Coordinates[0], lng: town1Coordinates[1] }, { lat: town2Coordinates[0], lng: town2Coordinates[1] });
-  return Math.round(distance * 0.000621371); // Convert to miles and round off
-}
-
-function getAge(user: any) {
-  const today = new Date();
-  const birthday = new Date(user.birthday);
-  let ageThisYear = today.getFullYear() - birthday.getFullYear();
-
-  // Adjust age if the user hasn't had their birthday yet this year
-  if (today < new Date(today.getFullYear(), birthday.getMonth(), birthday.getDate())) {
-    ageThisYear--;
-  }
-  return ageThisYear;
-}
 
 export default async function dashboard() {
   const user = await currentUser(); //seems to work
@@ -63,7 +41,7 @@ export default async function dashboard() {
   // fetch all users from xataClient where todays date minus their birthday is less than or equal to their age_filter[0] value
   // and todays date minus their birthday is greater than or equal to their age_filter[1] value
   if (userPreferences) {
-    const userAge = getAge(userPreferences);
+    const userAge = calculateAge(userPreferences);
 
     const minAge = userPreferences.age_filter?.[0] ? (userAge < 18 ? 13 : userPreferences.age_filter[0]) : 18;
     const maxAge = userPreferences.age_filter?.[1] ? (userAge < 18 ? 17 : userPreferences.age_filter[1]) : 100;
@@ -86,7 +64,7 @@ export default async function dashboard() {
         continue;
       }
 
-      const otherUserAge = getAge(otherUser);
+      const otherUserAge = calculateAge(otherUser);
 
       const ageInRange = otherUserAge >= minAge && otherUserAge <= maxAge;
       if (ageInRange) {
@@ -112,13 +90,15 @@ export default async function dashboard() {
     userPreferences.image = sessionUserData.imageUrl;
   }
 
+  const sortedUsers = scoringAlgorithm(userPreferences, filteredUsers);
+
 
   //iterate through filtered users, and run const userData = await clerkClient.users.getUser(user?.id) for each
   //then, push userData to filteredUsers array
 
   return (
     <>
-      <SwipeQueue sessionUser={userPreferences} filteredUsers={filteredUsers}/>
+      <SwipeQueue sessionUser={userPreferences} filteredUsers={sortedUsers}/>
       
     </>
   )

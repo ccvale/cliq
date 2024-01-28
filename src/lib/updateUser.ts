@@ -1,10 +1,8 @@
 export default async function updateUser(url: any, data: any) {
 
-    console.log(data);
-
-    // this is the working version
-
+    // we need the id to update the user, but we don't want to send it to the server as part of the payload
     const id = data['arg']['id'];
+
     if (id) {
         delete data['arg']['id'];
     }
