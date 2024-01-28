@@ -20,7 +20,7 @@ const tables = [
         name: "birthday",
         type: "datetime",
         notNull: true,
-        defaultValue: "2001-01-21T00:00:00.000Z",
+        defaultValue: "1900-01-01T00:00:00.000Z",
       },
       {
         name: "location",
@@ -47,7 +47,6 @@ const tables = [
       { name: "secondary_interest", type: "string", defaultValue: "Food" },
       { name: "third_interest", type: "string", defaultValue: "Music" },
       { name: "likes", type: "multiple" },
-      { name: "image", type: "string" },
     ],
   },
   {

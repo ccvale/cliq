@@ -16,7 +16,7 @@ import scoringAlgorithm from '@/lib/scoring';
 
 // we will want to load in the user auth, and the xata client, and filter by users in a near location, then send those users to the card component
 
-export default async function dashboard() {
+export default async function Dashboard() {
   const user = await currentUser(); //seems to work
   //console.log(user);
 
