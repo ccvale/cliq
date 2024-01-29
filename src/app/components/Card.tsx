@@ -40,7 +40,7 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
 
     const [users, setUsers] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [distanceTags, setDistanceTags] = useState([]);
+    const [distanceTags, setDistanceTags] = useState<string[]>(new Array(filteredUsers.length).fill('Calculating distance...'));
     const [image, setImages] = useState([]); // array of image urls
     const [age, setAge] = useState(0);
     const defaultUserLocation = "N/A, N/A";
@@ -52,9 +52,7 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
 
 
     useEffect(() => {
-        //setUsers(scoringAlgorithm(sessionUser, filteredUsers));
-        setUsers(filteredUsers);
-        setDistanceTags(new Array(filteredUsers.length).fill('Calculating distance...')); // is needed to prevent the distance tag from being undefined
+        setUsers(filteredUsers); // filteredUsers are sorted by "score"
 
         fetchDistances(filteredUsers);
         fetchAge(filteredUsers);
@@ -211,9 +209,9 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
                 </TinderCard>
             ) : (
                 <div className="text-center p-10">
-                    <h2 className="text-2xl font-bold mb-5">Wow! You&apos;ve been busy swiping!</h2>
-                        <p className="text-lg">There is nobody new left to swipe on for now...come back later!</p>
-                        <p className="text-lg">If you&apos;re new here, you should update your settings first and try again!</p>
+                        <h2 className="text-2xl font-bold mb-5 text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>Wow! You&apos;ve been busy swiping!</h2>
+                        <p className="text-lg text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>There is nobody new left to swipe on for now...come back later!</p>
+                        <p className="text-lg text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>If you&apos;re new here, you should update your settings first and try again!</p>
                 </div>
             )}
             <div className="flex flex-row justify-center items-center mx-auto -mt-8 gap-56">

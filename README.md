@@ -14,7 +14,7 @@ This project is ambitious, and has a lot of additional exciting features that ha
 
   - Highlightable interests ✅
 
-  - Ability to upload a profile picture, and potentially one other image for a user to highlight on their profile (differs to dating apps, where multiple photos are required) ✅
+  - Ability to upload a profile picture, and display it on their profile (differs to dating apps, where multiple photos are required, and are the focal point of the profile) ✅
 
   - A custom `palette`, which consists of two selectable colors that will blend together to theme each user card ✅
 
