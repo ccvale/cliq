@@ -18,6 +18,8 @@ This project is ambitious, and has a lot of additional exciting features that ha
 
   - A custom `palette`, which consists of two selectable colors that will blend together to theme each user card ✅
 
+    - This palette will also be used to theme the rest of the application, to give the user a sense of ownership over their user experience ✅
+
 - **Chat features**
 
   - Users will be able to chat with matches if and only if a formal match has occurred ✅

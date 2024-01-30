@@ -36,10 +36,11 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
     const sessionColor = sessionUser.primary_palette.toString().toLowerCase();
     const sessionSecondary = sessionUser.secondary_palette.toString().toLowerCase();
 
-    const template = `bg-gradient-to-r from-${sessionColor}-400 to-${sessionColor}-300 text-white`
-    const template2 = `bg-gradient-to-r from-${sessionSecondary}-400 to-${sessionSecondary}-300 text-white`
+    const primaryAccent = `bg-${sessionColor}-400 text-white`
+    const secondaryAccent = `bg-${sessionSecondary}-400 text-white`
 
-    console.log(template, template2);
+    const selectorColor = `bg-${sessionColor}-300`
+    const selectorHover = `hover:bg-${sessionColor}-200`
 
     const scrollToBottom = () => {
         if (messagesEndRef.current) {
@@ -156,7 +157,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
 
                         return (
                             <div key={index}
-                                className={`flex items-center mb-4 p-2 rounded-lg cursor-pointer ${activeChat === user.userId ? 'bg-indigo-300' : 'hover:bg-indigo-200'}`}
+                                className={`flex items-center mb-4 p-2 rounded-lg cursor-pointer ${activeChat === user.userId ? selectorColor : selectorHover}`}
                                 onClick={() => setActiveChat(user.userId)}>
                                 <img src={user.imageUrl} alt={user.displayName} className="h-12 w-12 rounded-full mr-3" />
                                 <div className="flex flex-col flex-grow">
@@ -172,7 +173,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
                                     e.stopPropagation(); // prevents triggering the onClick event
                                     handleUnmatchUser(user);
                                 }} className="p-1 rounded-full hover:bg-gray-100">
-                                    <XCircleIcon className="h-6 w-6 text-indigo-500" />
+                                    <XCircleIcon className={`h-6 w-6 text-${sessionColor}-500`} />
                                 </button>
                             </div>
                         );
@@ -194,7 +195,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
                     {activeChat && organizedChats[activeChat] ? (
                         organizedChats[activeChat].map((msg, index) => (
                             <div key={index} className={`flex flex-col ${msg.sender_id === sessionUser.userId ? "items-end" : "items-start"}`}>
-                                <div className={`max-w-xs md:max-w-md lg:max-w-lg p-2 rounded-lg ${msg.sender_id === sessionUser.userId ? template : template2}`}>
+                                <div className={`max-w-xs md:max-w-md lg:max-w-lg p-2 rounded-lg ${msg.sender_id === sessionUser.userId ? primaryAccent : secondaryAccent}`}>
                                     {msg.message}
                                 </div>
                                 <span className="text-xs text-gray-500 mt-1">
@@ -232,7 +233,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
                         />
                         <button
                             onClick={handleSendMessage}
-                            className="bg-gradient-to-r from-indigo-400 to-indigo-400 text-white px-4 py-2 rounded-lg hover:from-indigo-300 hover:to-indigo-300"
+                            className={`${primaryAccent} text-white px-4 py-2 rounded-lg ${selectorHover}`}
                         >
                             Send
                         </button>

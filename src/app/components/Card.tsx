@@ -192,10 +192,10 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
         swipeMessage = 'Maybe try being less picky!';
     } else if (swipePercentage < 50) {
         swipeMessage = 'Quality over quantity, huh?';
-    } else if (swipePercentage < 99) {
+    } else if (swipePercentage < 80) {
+        swipeMessage = 'Keep up the swiping!';
+    } else {
         swipeMessage = 'You sure are friendly!';
-    } else  {
-        swipeMessage = 'YOU A THOT ASS NIGGA!!!';
     }
 
     return (
@@ -210,7 +210,7 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
                 </TinderCard>
             ) : (
                 <div className="text-center p-10">
-                        <h2 className="text-2xl font-bold mb-5 text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>Wow! You&apos;ve been busy swiping!</h2>
+                        <h2 className="text-2xl font-bold mb-5 text-indigo-700 hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>Wow! You&apos;ve been busy swiping!</h2>
                         <p className="text-lg text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>There is nobody new left to swipe on for now...come back later!</p>
                         <p className="text-lg text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>If you&apos;re new here, you should update your settings first and try again!</p>
                 </div>

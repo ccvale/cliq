@@ -137,13 +137,13 @@ export default function SettingsPage({ record }: props) {
 return (
     <>
         {showPopup && (
-            <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-pink-300 to-indigo-400 text-white font-semibold p-4 text-center">
+            <div className={`absolute top-0 left-0 right-0 bg-gradient-to-r from-${record.primary_palette?.toString().toLowerCase()}-500 to-${record.secondary_palette?.toString().toLowerCase()}-300 text-white font-semibold p-4 text-center`}>
                 Settings Updated Successfully!
             </div>
         )}
 
         <div className="mt-0 mx-auto mb-10 max-w-5xl">
-            <form onSubmit={handleSubmit} className={`mt-0 max-w-5xl max-h-[80vh] overflow-y-auto bg-gradient-to-r from-${record.primary_palette?.toString().toLowerCase()}-300 to-${record.secondary_palette?.toString().toLowerCase()}-400 text-white rounded-xl p-10 flex flex-col justify-start items-center mx-auto mb-10 drop-shadow-lg text-center font-semibold`}>
+            <form onSubmit={handleSubmit} className={`mt-0 max-w-5xl max-h-[80vh] overflow-y-auto bg-gradient-to-r from-${record.primary_palette?.toString().toLowerCase()}-500 to-${record.secondary_palette?.toString().toLowerCase()}-300 text-white rounded-xl p-10 flex flex-col justify-start items-center mx-auto mb-10 drop-shadow-lg text-center font-semibold`}>
                 <h1 className="text-4xl mb-4 -mt-5">User Settings <span className="italic text-lg">Let everyone know who you are!</span></h1>
                 <div className="w-full mb-4">
                     <label className="block text-xl mb-2">Display Name <span className="italic text-sm">- How you want to introduce yourself</span>
