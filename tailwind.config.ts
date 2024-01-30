@@ -90,6 +90,29 @@ const config: Config = {
     'from-pink-300',
     'from-rose-300',
 
+    'from-slate-400',
+    'from-gray-400',
+    'from-zinc-400',
+    'from-neutral-400',
+    'from-stone-400',
+    'from-red-400',
+    'from-orange-400',
+    'from-amber-400',
+    'from-yellow-400',
+    'from-lime-400',
+    'from-green-400',
+    'from-emerald-400',
+    'from-teal-400',
+    'from-cyan-400',
+    'from-sky-400',
+    'from-blue-400',
+    'from-indigo-400',
+    'from-violet-400',
+    'from-purple-400',
+    'from-fuchsia-400',
+    'from-pink-400',
+    'from-rose-400',
+
     'to-slate-400',
     'to-gray-400',
     'to-zinc-400',
@@ -111,7 +134,7 @@ const config: Config = {
     'to-purple-400',
     'to-fuchsia-400',
     'to-pink-400',
-    'to-rose-400'
+    'to-rose-400',
   ]
 }
 export default config

@@ -33,6 +33,14 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
     // the next handful of lines are to make sure that when a chat window is opened, it opens up to the latest messages
     const messagesEndRef = useRef(null);
 
+    const sessionColor = sessionUser.primary_palette.toString().toLowerCase();
+    const sessionSecondary = sessionUser.secondary_palette.toString().toLowerCase();
+
+    const template = `bg-gradient-to-r from-${sessionColor}-400 to-${sessionColor}-300 text-white`
+    const template2 = `bg-gradient-to-r from-${sessionSecondary}-400 to-${sessionSecondary}-300 text-white`
+
+    console.log(template, template2);
+
     const scrollToBottom = () => {
         if (messagesEndRef.current) {
             messagesEndRef.current.scrollTop = messagesEndRef.current.scrollHeight;
@@ -126,7 +134,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
 
             const matchUpdatedMatches = matchUserMatches.filter(item => !item.includes(sessionUser.id));
             const matchUpdatedLikes = matchUserLikes.filter(item => !item.includes(sessionUser.userId));
-            const matchUpdatedUser = { id: user.id, matches: matchUpdatedMatches, likes: matchUpdatedLikes};
+            const matchUpdatedUser = { id: user.id, matches: matchUpdatedMatches, likes: matchUpdatedLikes };
 
             await userTrigger(sessionUpdatedUser);
             await userTrigger(matchUpdatedUser);
@@ -186,7 +194,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
                     {activeChat && organizedChats[activeChat] ? (
                         organizedChats[activeChat].map((msg, index) => (
                             <div key={index} className={`flex flex-col ${msg.sender_id === sessionUser.userId ? "items-end" : "items-start"}`}>
-                                <div className={`max-w-xs md:max-w-md lg:max-w-lg p-2 rounded-lg ${msg.sender_id === sessionUser.userId ? "bg-gradient-to-r from-indigo-400 to-indigo-400 text-white" : "bg-gradient-to-r from-pink-300 to-pink-300 text-white"}`}>
+                                <div className={`max-w-xs md:max-w-md lg:max-w-lg p-2 rounded-lg ${msg.sender_id === sessionUser.userId ? template : template2}`}>
                                     {msg.message}
                                 </div>
                                 <span className="text-xs text-gray-500 mt-1">
@@ -199,7 +207,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
                             </div>
                         ))
                     ) : (
-                            <div className="text-center pt-52 text-3xl text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>
+                        <div className="text-center pt-52 text-3xl text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>
                             Select a chat to view it here!
                         </div>
                     )}
