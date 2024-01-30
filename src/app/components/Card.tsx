@@ -145,6 +145,7 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
             if (direction === 'right') {
                 setRightSwipes(prev => prev + 1);
                 const liked = users[currentIndex];
+                console.log(liked);
                 const isMatch = liked.likes?.includes(sessionUser.userId) || false; // if other user has this user in likes already, its a match (both users have liked each other)
                 // we want to add the user id to the sessionUser's liked array, then also check for match...if match, add to matches array
                 const sessionUserLike = sessionUser.likes

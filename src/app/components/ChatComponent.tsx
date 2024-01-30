@@ -139,7 +139,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
     return (
         <div className="flex h-screen">
             {/* Left panel */}
-            <div className="w-2/3 bg-gradient-to-r from-pink-300 to-indigo-400 p-4 overflow-y-auto shadow-lg rounded-lg">
+            <div className={`w-2/3 bg-gradient-to-r from-${sessionUser.primary_palette.toString().toLowerCase()}-300 to-${sessionUser.secondary_palette.toString().toLowerCase()}-400 p-4 overflow-y-auto shadow-lg rounded-lg`}>
                 <h1 className="text-2xl font-bold text-white mb-6">Chats</h1>
                 <div>
                     {userDetails.map((user, index) => {

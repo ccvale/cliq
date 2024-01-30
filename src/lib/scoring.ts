@@ -17,6 +17,23 @@ export default function scoringAlgorithm(sessionUser: UsersRecord, users: any[])
         DESCRIPTION
 
             This function calculates a very simple/basic relevance score for each user. Deciding factors include age similarity, interest similarity, with extra points to those in the same town, work at the same company, or have the same job position. Most importantly, a big boost to users who have already liked the session user, and they will have a big chance to get to the top of the session users swipe queue. The score is calculated by adding points for each similarity and subtracting points for each difference. This orders the users by "relevance" and allows us to display the most relevant users first.
+
+            Scoring breakdown as currently implemented:
+
+            - 50 points for having already liked the session user (point bonus for priority)
+
+            - 10 points for each common interest
+                - 50 points total if all 3 interests match (20 point bonus)
+
+            - 10 points for age match
+                - -1 point for each year of age difference
+                - (age difference * 2) is subtracted if age difference is greater than 10
+
+            - 5 points for being in the same town
+
+            - 5 points for having the same job title
+            - 5 points for working at the same company
+            - 20 points (10 point bonus) for working at the same company and having the same job position
     */
 
     users.forEach( (user) => {
