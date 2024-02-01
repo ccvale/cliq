@@ -47,6 +47,7 @@ const tables = [
       { name: "secondary_interest", type: "string", defaultValue: "Food" },
       { name: "third_interest", type: "string", defaultValue: "Music" },
       { name: "likes", type: "multiple" },
+      { name: "isVerified", type: "boolean", defaultValue: false },
     ],
   },
   {

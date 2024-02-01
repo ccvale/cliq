@@ -6,6 +6,7 @@ import updateUser from '@/lib/updateUser';
 import getUser from '@/lib/getUser';
 import { XCircleIcon } from '@heroicons/react/24/outline';
 import io from 'socket.io-client';
+import CheckBadgeIcon from '@heroicons/react/24/solid/CheckBadgeIcon';
 
 // again, should get the types for these props
 type Props = {
@@ -162,7 +163,9 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
                                 <img src={user.imageUrl} alt={user.displayName} className="h-12 w-12 rounded-full mr-3" />
                                 <div className="flex flex-col flex-grow">
                                     <div className="flex justify-between">
-                                        <p className="font-medium text-white">{user.displayName}</p>
+                                        <p className="flex items-center font-medium text-white">{user.displayName}{user.isVerified === 'true' && <CheckBadgeIcon className="h-4 w-4 text-white ml-1"/>}</p>
+
+
                                         <p className="text-xs text-white">{lastMessageTime}</p>
                                     </div>
                                     {lastMessage && (
@@ -186,13 +189,26 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
                 {/* Chat Header */}
                 {activeChat !== null && userDetails.find(user => user.userId === activeChat) && (
                     <div className="p-3 border-b border-gray-300">
-                        <h2 className="text-lg font-semibold">{userDetails.find(user => user.userId === activeChat).displayName}</h2>
+                        {userDetails.find(user => user.userId === activeChat) && (
+                            <div className="flex items-center">
+                                <h2 className="text-lg font-semibold">
+                                    {userDetails.find(user => user.userId === activeChat).displayName}
+                                </h2>
+                                {userDetails.find(user => user.userId === activeChat).isVerified === 'true' && (
+                                    <CheckBadgeIcon className={`h-4 w-4 text-${sessionColor}-500 ml-1`} />
+                                )}
+                            </div>
+                        )}
                     </div>
                 )}
 
                 {/* Message Display Area */}
                 <div className="flex-1 overflow-y-auto p-3 space-y-2" style={{ maxHeight: 'calc(100% - 4rem)' }} ref={messagesEndRef}>
-                    {activeChat && organizedChats[activeChat] ? (
+                    {activeChat && (organizedChats[activeChat] === undefined || organizedChats[activeChat].length === 0) ? (
+                        <div className="text-center pt-52 text-2xl text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>
+                            Why not introduce yourself to your new match already?
+                        </div>
+                    ) : activeChat ? (
                         organizedChats[activeChat].map((msg, index) => (
                             <div key={index} className={`flex flex-col ${msg.sender_id === sessionUser.userId ? "items-end" : "items-start"}`}>
                                 <div className={`max-w-xs md:max-w-md lg:max-w-lg p-2 rounded-lg ${msg.sender_id === sessionUser.userId ? primaryAccent : secondaryAccent}`}>
@@ -212,6 +228,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
                             Select a chat to view it here!
                         </div>
                     )}
+
                 </div>
 
 

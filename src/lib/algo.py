@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-# just using this as a place to test and tweak the scoring algorithm
+# just using this as a place to test and tweak the logic for the scoring algorithm (can't test everything, but most))
 class User(BaseModel):
     age: int
     interest1: str

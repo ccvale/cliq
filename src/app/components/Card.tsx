@@ -5,9 +5,10 @@ import TinderCard from 'react-tinder-card';
 import Image from 'next/image';
 import GlobeAltIcon from '@heroicons/react/24/outline/esm/GlobeAltIcon'; // location
 import BriefcaseIcon from '@heroicons/react/24/outline/esm/BriefcaseIcon'; // position
+import CheckBadgeIcon from '@heroicons/react/24/solid/esm/CheckBadgeIcon';
+import { ArrowLeftCircleIcon, ArrowRightCircleIcon } from '@heroicons/react/24/outline';
 import useSWRMutation from 'swr/mutation';
 import updateUser from '@/lib/updateUser';
-import { ArrowLeftCircleIcon, ArrowRightCircleIcon } from '@heroicons/react/24/outline';
 import calculateAge from '@/lib/calculateAge';
 import calculateDistanceBetweenTowns from '@/lib/calculateDistanceBetweenTowns';
 import { UsersRecord } from '@/xata';
@@ -157,8 +158,8 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
                     likes: sessionUserLike,
                     matches: isMatch
                         ? (sessionUser.matches
-                            ? [...sessionUser.matches, `${liked.id} - ${liked.userId} - ${liked.display_name} - ${liked.image}`]
-                            : [`${liked.id} - ${liked.userId} - ${liked.display_name} - ${liked.image}`])
+                            ? [...sessionUser.matches, `${liked.id} - ${liked.userId} - ${liked.display_name} - ${liked.image} - ${liked.isVerified}`]
+                            : [`${liked.id} - ${liked.userId} - ${liked.display_name} - ${liked.image} - ${liked.isVerified}`])
                         : sessionUser.matches
                 };
 
@@ -166,8 +167,8 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
                     id: liked.id,
                     matches: isMatch
                         ? (liked.matches
-                            ? [...liked.matches, `${sessionUser.id} - ${sessionUser.userId} - ${sessionUser.display_name} - ${sessionUser.image}`]
-                            : [`${sessionUser.id} - ${sessionUser.userId} - ${sessionUser.display_name} - ${sessionUser.image}`])
+                            ? [...liked.matches, `${sessionUser.id} - ${sessionUser.userId} - ${sessionUser.display_name} - ${sessionUser.image} - ${sessionUser.isVerified}`]
+                            : [`${sessionUser.id} - ${sessionUser.userId} - ${sessionUser.display_name} - ${sessionUser.image} - ${sessionUser.isVerified}`])
                         : liked.matches
                 };
 
@@ -239,8 +240,11 @@ function UserCard({ user, distanceTag }) {
 
     return (
         <div className={user.cardTheme} style={{ userSelect: 'none' }}>
-            <Image src={user.image} alt={`${user.display_name}&apos;s profile`} width={500} height={500} className="h-20 w-20 object-cover rounded-full mx-auto block"/>
-            <h1 className="text-4xl">{user.display_name}</h1>
+            <Image src={user.image} alt={`${user.display_name}&apos;s profile`} width={500} height={500} className="h-20 w-20 object-cover rounded-full mx-auto block" />
+            <h1 className="text-4xl flex items-center justify-center">
+                {user.display_name}
+                {user.isVerified && <CheckBadgeIcon className="h-6 w-6 text-white ml-1" />}
+            </h1>
             <h2 className="text-3xl">{ageThisYear}</h2>
             <span className="text-sm italic font-semibold">{distanceTag}</span>
             <p className="text-center italic font-light whitespace-pre-line">{user.bio}</p>

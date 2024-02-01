@@ -36,13 +36,13 @@ export default async function Chat() {
     const sanitizedMessages = JSON.parse(serializedMessages);
 
 
-    let userDetails: { id: string; userId: string; displayName: string; imageUrl: string; }[] = [];
+    let userDetails: { id: string; userId: string; displayName: string; imageUrl: string; isVerified: string; }[] = [];
 
     // parsing through the matches array (which we formatted in a specific way) to get select user details for each match
     if (sessionUser?.matches) {
         userDetails = sessionUser.matches.map(match => {
-            const [id, userId, displayName, imageUrl] = match.split(' - ');
-            return { id, userId, displayName, imageUrl };
+            const [id, userId, displayName, imageUrl, isVerified] = match.split(' - ');
+            return { id, userId, displayName, imageUrl, isVerified };
         });
     }
 

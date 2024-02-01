@@ -25,10 +25,12 @@ export default function scoringAlgorithm(sessionUser: UsersRecord, users: any[])
             - 10 points for each common interest
                 - 50 points total if all 3 interests match (20 point bonus)
 
+            (not sure about this one, but it's a way to give a slight boost to people who are the same age)
             - 10 points for age match
                 - -1 point for each year of age difference
                 - (age difference * 2) is subtracted if age difference is greater than 10
 
+            (too resource intensive to calculate distance for every user, so we'll give a slight boost to people who are in the same town)
             - 5 points for being in the same town
 
             - 5 points for having the same job title
