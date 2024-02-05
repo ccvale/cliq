@@ -66,7 +66,6 @@ In a project of this scale, there are many other features that I would like to i
 
   - `Achievements` - a way for users to show off their accomplishments on the platform, such as "First Match", "First Message", "First Block", etc. Could be a fun way to gamify the platform, and encourage users to use the app more, and would be implemented with a `badge` system, where users can display their achievements on their profile
 
-
 - **Additional chat features**
 
   - Ability to send other types of media (images, gifs, etc.)

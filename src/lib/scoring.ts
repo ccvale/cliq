@@ -49,16 +49,25 @@ export default function scoringAlgorithm(sessionUser: UsersRecord, users: any[])
 
         // age similarity - we don't *really* care about age due to age filtering, but this is a good way to give a slight boost to people who are the same age
         const ageDifference = Math.abs(calculateAge(sessionUser) - calculateAge(user));
-        if (ageDifference < 10) {
-            user['score'] -= ageDifference;
-        } else {
-            user['score'] -= ageDifference * 2;
+        
+        if (ageDifference === 0) {
+            user['score'] += 10;
+        }
+        else if (ageDifference <= 3) {
+            user['score'] += 5; // quick win
+        }
+        else if (ageDifference > 5) {
+            user['score'] -= ageDifference; // penalty
         }
 
         // interest matching - 10 points per common interest
-        const combinedInterests = new Set([sessionUser.primary_interest, sessionUser.secondary_interest, sessionUser.third_interest, user.primary_interest, user.secondary_interest, user.third_interest]);
+        const userInterests = [user.primary_interest, user.secondary_interest, user.third_interest];
+        const sessionUserInterests = [sessionUser.primary_interest, sessionUser.secondary_interest, sessionUser.third_interest];
 
-        user['score'] += combinedInterests.size < 3 ? combinedInterests.size * 10 : 50; // bonus if all 3 interests match
+        // intersection of the two arrays
+        const combinedInterests = userInterests.filter(interest => sessionUserInterests.includes(interest));
+
+        user['score'] += combinedInterests.length < 3 ? combinedInterests.length * 10 : 50; // bonus if all 3 interests match
 
         // again, we don't *really* care about location due to location filtering, but we'll give 5 points if they're in the same town to give a boost to people who we know are close to the user without having to calculate distance again
         if (sessionUser.location === user.location) {

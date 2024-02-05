@@ -7,7 +7,7 @@ const socketIo = require('socket.io');
 /*
 
 The server.js file is the entry point for the server side of the application.
-It creates an express server, a socket.io server, and a next.js app.
+It creates an express server, and a socket.io server.
 It then sets up the socket.io server to listen for connections and disconnections.
 This is key to the real-time functionality of the messaging aspect of the application.
 
@@ -32,6 +32,12 @@ nextApp.prepare().then(() => {
         socket.on('disconnect', () => {
             console.log('Client disconnected');
         });
+
+        socket.on('userUnmatched', (userA, userB) => {
+            //console.log('userUnmatched', userA, userB);
+            //io.emit('userUnmatched', userA, userB);
+
+        })
 
         socket.on('sendMessage', message => {
             //console.log('sendMessage', message);

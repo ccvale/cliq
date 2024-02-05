@@ -1,4 +1,4 @@
-// This file contains generated code related to the database schema.
+// This file contains **generated** code related to the database schema.
 // Here, we can see the schema definition, as well as the types for each table.
 // We have two tables: Users and messages.
 // Users keeps track of all the users in the database. (pretty self-explanatory)
