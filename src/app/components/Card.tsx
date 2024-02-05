@@ -12,15 +12,15 @@ import updateUser from '@/lib/updateUser';
 import calculateAge from '@/lib/calculateAge';
 import calculateDistanceBetweenTowns from '@/lib/calculateDistanceBetweenTowns';
 import { UsersRecord } from '@/xata';
+import { ExtendedUser } from '../../../types';
 
 // should get accurate types for these props - for now this works
 type Props = {
-    sessionUser: UsersRecord,
-    filteredUsers: any // its an array of JSON objects
+    sessionUser: ExtendedUser,
+    filteredUsers: ExtendedUser[] // its an array of JSON objects
 }
 
-export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
-    
+export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {    
     /*
         NAME
 
@@ -39,11 +39,11 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
             It will also update the user's swipe history.
     */
 
-    const [users, setUsers] = useState([]);
+    const [users, setUsers] = useState<ExtendedUser[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [distanceTags, setDistanceTags] = useState<string[]>(new Array(filteredUsers.length).fill('Calculating distance...'));
     const [image, setImages] = useState([]); // array of image urls
-    const [age, setAge] = useState(0);
+    const [age, setAge] = useState<(number | "N/A")[]>([]);
     const defaultUserLocation = "N/A, N/A";
 
     const { trigger } = useSWRMutation('/api/updateUser', updateUser);
@@ -53,13 +53,14 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
 
 
     useEffect(() => {
+         // Update the type of the users state variable
         setUsers(filteredUsers); // filteredUsers are sorted by "score"
 
         fetchDistances(filteredUsers);
         fetchAge(filteredUsers);
     }, []);
 
-    const fetchDistances = async (users) => {
+    const fetchDistances = async (users: UsersRecord[]) => {
 
         /*
         NAME
@@ -89,7 +90,7 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
         setDistanceTags(newDistanceTags);
     };
 
-    const fetchAge = async (users) => {
+    const fetchAge = async (users: UsersRecord[]) => {
         /*
             NAME
 
@@ -109,7 +110,7 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
         const newAge = await Promise.all(
             users.map(async (user) => {
                 if (user.birthday) {
-                    const age = await calculateAge(user.birthday);
+                    const age = calculateAge(user);
                     return age;
                 }
                 return 'N/A';
@@ -118,7 +119,7 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
         setAge(newAge);
     };
 
-    const swiped = async (direction) => {
+    const swiped = async (direction: string) => {
         /*
             NAME
 
@@ -172,7 +173,7 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
                         : liked.matches
                 };
 
-
+                // these lines continue to give warnings, but the logic continues to be correct
                 const sessionUserLikeUpdate = await trigger(updatedSessionData);
                 const otherUserLikeUpdate = await trigger(updatedOtherData);
             }
@@ -235,12 +236,12 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
     );
 }
 
-function UserCard({ user, distanceTag }) {
+function UserCard({ user, distanceTag }: { user: ExtendedUser, distanceTag: string }) {
     const ageThisYear = calculateAge(user);
 
     return (
         <div className={user.cardTheme} style={{ userSelect: 'none' }}>
-            <Image src={user.image} alt={`${user.display_name}&apos;s profile`} width={500} height={500} className="h-20 w-20 object-cover rounded-full mx-auto block" />
+            {user.image && <Image src={user.image} alt={`${user.display_name}'s profile`} width={500} height={500} className="h-20 w-20 object-cover rounded-full mx-auto block" />}
             <h1 className="text-4xl flex items-center justify-center">
                 {user.display_name}
                 {user.isVerified && <CheckBadgeIcon className="h-6 w-6 text-white ml-1" />}

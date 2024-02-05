@@ -21,17 +21,22 @@ export default async function Settings() {
   
   const { userId } = auth();
   const xataClient = getXataClient();
-  const fetchedUser = await xataClient.db.Users.filter({ 'userId': userId }).getFirst();
+  const fetchedUser = await xataClient.db.Users.filter(userId ? { 'userId': userId } : undefined).getFirst();
   
     // if the user doesn't exist in the xata database, we want to add them (they are authenticated and exist in the clerk database first)
     if (!fetchedUser) {
-        await xataClient.db.Users.create({userId});
-        revalidatePath('/settings');
+        if (userId) {
+          await xataClient.db.Users.create({ userId });
+          revalidatePath('/settings');
+        }
+      revalidatePath('/settings');
     }
 
-    const record = fetchedUser.toSerializable();
-           
-  return (
-    <SettingsPage record={record}/>
-  )
+  const record = fetchedUser ? fetchedUser.toSerializable() : null;
+  
+  if (record) {
+    return (
+      <SettingsPage record={record} />
+    )
+  }       
 }

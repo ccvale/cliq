@@ -2,7 +2,7 @@ import { UsersRecord } from "@/xata";
 import calculateAge from "./calculateAge";
 
 // fix the typing for the users array
-export default function scoringAlgorithm(sessionUser: UsersRecord, users: any[]) {
+export default function scoringAlgorithm(sessionUser: UsersRecord, users: UsersRecord[]) {
     /*
         NAME
 
@@ -38,26 +38,27 @@ export default function scoringAlgorithm(sessionUser: UsersRecord, users: any[])
             - 20 points (10 point bonus) for working at the same company and having the same job position
     */
 
+    let userScores: { userId: string; score: number; }[] = [];
     users.forEach( (user) => {
         // the things we care about: age similarity (10 points for match, -1 for each age different), interest matching (10 points per match)
-        user['score'] = 0; // initialize the score to 0
+        let score = 0;
 
         // if the other user has sent a like to the session user, give them a *big boost*
         if (user?.likes?.includes(sessionUser.userId)) {
-            user['score'] += 50;
+            score += 50;
         }
 
         // age similarity - we don't *really* care about age due to age filtering, but this is a good way to give a slight boost to people who are the same age
         const ageDifference = Math.abs(calculateAge(sessionUser) - calculateAge(user));
         
         if (ageDifference === 0) {
-            user['score'] += 10;
+            score += 10;
         }
         else if (ageDifference <= 3) {
-            user['score'] += 5; // quick win
+            score += 5; // quick win
         }
         else if (ageDifference > 5) {
-            user['score'] -= ageDifference; // penalty
+            score -= ageDifference; // penalty
         }
 
         // interest matching - 10 points per common interest
@@ -67,28 +68,32 @@ export default function scoringAlgorithm(sessionUser: UsersRecord, users: any[])
         // intersection of the two arrays
         const combinedInterests = userInterests.filter(interest => sessionUserInterests.includes(interest));
 
-        user['score'] += combinedInterests.length < 3 ? combinedInterests.length * 10 : 50; // bonus if all 3 interests match
+        score += combinedInterests.length < 3 ? combinedInterests.length * 10 : 50; // bonus if all 3 interests match
 
         // again, we don't *really* care about location due to location filtering, but we'll give 5 points if they're in the same town to give a boost to people who we know are close to the user without having to calculate distance again
         if (sessionUser.location === user.location) {
-            user['score'] += 5;
+            score += 5;
         }
 
         // in similar fashion, if they work at the same company or have the same job position, we'll give another quick win, with a boost to people who work at the same company and have the same job position
         if ((sessionUser.job_position === user.job_position) && (sessionUser.job_company === user.job_company)) {
-            user['score'] += 20;
+            score += 20;
         }
 
         else if (sessionUser.job_company === user.job_company) {
-            user['score'] += 5;
+            score += 5;
         }
 
         else if (sessionUser.job_position === user.job_position) {
-            user['score'] += 5;
+            score += 5;
         }
+
+        userScores.push({ userId: user.userId, score: score });
     });
 
     // sort the array by score
-    users.sort((a, b) => b['score'] - a['score']);
-    return users;
+    userScores.sort((a, b) => b.score - a.score);
+    const sortedUsers = userScores.map(score => users.find(user => user.userId === score.userId));
+
+    return sortedUsers;
 }
