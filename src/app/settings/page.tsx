@@ -5,6 +5,7 @@ import SettingsPage from '../components/SettingsPage';
 import { revalidatePath } from 'next/cache';
 
 export default async function Settings() {
+  
   /*
         NAME
 
@@ -23,7 +24,8 @@ export default async function Settings() {
   const xataClient = getXataClient();
   const fetchedUser = await xataClient.db.Users.filter(userId ? { 'userId': userId } : undefined).getFirst();
   
-    // if the user doesn't exist in the xata database, we want to add them (they are authenticated and exist in the clerk database first)
+  // if the user doesn't exist in the xata database, we want to add them (they are authenticated and exist in the clerk database first)
+  // when we revalidate path, we are essentially telling the page to re-render with the new data
     if (!fetchedUser) {
         if (userId) {
           await xataClient.db.Users.create({ userId });
@@ -34,6 +36,8 @@ export default async function Settings() {
 
   const record = fetchedUser ? fetchedUser.toSerializable() : null;
   
+  // we will always have a record, because if the user doesn't exist in the xata database, we add them
+  // but for the sake of type safety, we will check if the record exists before rendering the settings page
   if (record) {
     return (
       <SettingsPage record={record} />

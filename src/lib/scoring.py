@@ -1,6 +1,13 @@
 from pydantic import BaseModel
 
-# just using this as a place to test and tweak the logic for the scoring algorithm (can't test everything, but most))
+'''
+This is where the scoring algorithm was being tested.
+The logic here is that we want to match users based on their age, interests, job title, job company, and town.
+I wanted a quick way to test the algorithm, so I created a class to represent a user, and then created a few users to test the algorithm with.
+The goal here was that I wanted to play with the numbers until I found a good balance of scoring that would give me the best matches.
+The scoring algorithm is based on a 0+ scoring system, where the higher the score, the better the match, and is detailed in the comments below,
+and especially in the `scoring.ts` file, where it is used in the actual application.
+'''
 class User(BaseModel):
     age: int
     interest1: str
@@ -63,7 +70,6 @@ def algo(me, other):
         score += 30
     elif len(interests) == 1:
         score += 10
-
 
 
 

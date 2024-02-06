@@ -3,6 +3,7 @@ import { UsersRecord } from './src/xata';
 
 import UsersRecord from './src/xata';
 
+// this type specifies the data that is sent to the server when a user is created
 export type SettingsFormData = {
     display_name: string | JSONData,
     id: string | JSONData,
@@ -21,9 +22,41 @@ export type SettingsFormData = {
     location_filter: [string | JSONData, string | JSONData]
 }
 
+// this type handles a modifed state of UsersRecord, where we extend to include relevant Clerk data
 export interface ExtendedUser extends UsersRecord {
     image: string | undefined,
     cardTheme: string | undefined
+}
+
+// this type is used to handle data to render with user information on the chat end
+export type MinimizedChatData = {
+    id: string,
+    userId: string,
+    displayName: string,
+    imageUrl: string,
+    isVerified: string
+}
+
+// type that handles data for messages
+export type MessageMetadata = {
+    id: string,
+    message: string,
+    receiver_id: string,
+    sender_id: string,
+    xata: {
+        createdAt: string | Date,
+        updatedAt: string | Date,
+        version: number
+    }
+}
+
+// quick unmatch/popup user data
+export type PopupUser = {
+    id: string,
+    userId: string,
+    displayName: string,
+    imageUrl: string,
+    isVerified: string
 }
 
 

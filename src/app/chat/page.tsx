@@ -17,9 +17,11 @@ export default async function Chat() {
             This function has many responsibilities. It is responsible for getting the current user, getting the user's matches, getting all messages that the user has sent or received, and then rendering the chat component with all of this data. It also handles the case where the user has no matches, and renders a message to the user telling them that they have no matches and that they should get out there and make some friends. This function is also responsible for "sanitizing" the messages that the user has sent or received, so that the messages can be passed to the chat component without causing errors.
     */
     
+    // getting the xata client and the current user from Clerk
     const xataClient = getXataClient();
     const user = await currentUser();
 
+    // using clerk user info to get the user from the xata database
     const sessionUserRaw = await xataClient.db.Users.filter({ 'userId': user?.id }).getFirst();
     const sessionUser = { ...sessionUserRaw };
     
@@ -49,12 +51,16 @@ export default async function Chat() {
     // handling case where user has no matches - we don't want to render the full chat component if there are no matches
     // in this case, if the users matches array doesn't exist, or if it exists, but is empty
     if (!sessionUser?.matches || sessionUser.matches.length === 0) {
+
         return (
             <div className="flex justify-center items-center h-screen" style={{ paddingBottom: '40vh' }}>
+
                 <div className="text-center">
                     <h1 className="text-3xl text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>You don&apos;t have any matches...yet!</h1>
+
                     <h1 className="text-2xl text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>Get out there and make some friends!</h1>
                 </div>
+
             </div>
         );
     }

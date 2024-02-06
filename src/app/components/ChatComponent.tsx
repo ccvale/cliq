@@ -7,12 +7,14 @@ import getUser from '@/lib/getUser';
 import { XCircleIcon } from '@heroicons/react/24/outline';
 import io from 'socket.io-client';
 import CheckBadgeIcon from '@heroicons/react/24/solid/CheckBadgeIcon';
+import { UsersRecord } from '@/xata';
+import { MessageMetadata, MinimizedChatData, PopupUser, ExtendedUser } from '../../../types';
 
-// again, should get the types for these props
+
 type Props = {
-    sessionUser: any,
-    userDetails: any,
-    matchMessages: any
+    sessionUser: UsersRecord,
+    userDetails: MinimizedChatData[],
+    matchMessages: MessageMetadata[]
 }
 
 // set up socket connection
@@ -32,10 +34,10 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
     const { trigger: userTrigger } = useSWRMutation('/api/updateUser', updateUser);
 
     // the next handful of lines are to make sure that when a chat window is opened, it opens up to the latest messages
-    const messagesEndRef = useRef(null);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    const sessionColor = sessionUser.primary_palette.toString().toLowerCase();
-    const sessionSecondary = sessionUser.secondary_palette.toString().toLowerCase();
+    const sessionColor = sessionUser.primary_palette?.toString().toLowerCase() ?? "indigo";
+    const sessionSecondary = sessionUser.secondary_palette?.toString().toLowerCase() ?? "pink";
 
     const primaryAccent = `bg-${sessionColor}-400 text-white`
     const secondaryAccent = `bg-${sessionSecondary}-400 text-white`
@@ -56,7 +58,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
     // organizing chats to associate each chat with the user it is with
     useEffect(() => {
         const chats = {};
-        matchMessages.forEach(message => {
+        matchMessages.forEach((message: { sender_id: any; receiver_id: any; message: string; }) => {
             const otherUserId = message.sender_id === sessionUser.userId ? message.receiver_id : message.sender_id;
             if (!chats[otherUserId]) {
                 chats[otherUserId] = [];
@@ -112,7 +114,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
             // Send the message to the server
             try {
                 const response = await trigger(newSentMessage);
-                await socket.emit('sendMessage', newSentMessage);
+                await socket.emit('sendMessage', newSentMessage); // needs to await, even though it says it doesn't
                 //console.log("Message sent, server response:", response);
             } catch (error) {
                 console.error("Failed to send message:", error);
@@ -121,12 +123,13 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
         }
     };
 
-    const handleUnmatchUser = async (user) => {
+    const handleUnmatchUser = async (user: PopupUser) => {
+        console.log(user);
         if (window.confirm(`Are you sure you would like to unmatch ${user.displayName}?`)) {
 
             // remove each other from matches
-            const sessionUpdatedMatches = sessionUser.matches.filter(item => !item.includes(user.id));
-            const sessionUpdatedLikes = sessionUser.likes.filter(item => !item.includes(user.userId));
+            const sessionUpdatedMatches = sessionUser.matches?.filter(item => !item.includes(user.id)) || [];
+            const sessionUpdatedLikes = sessionUser.likes?.filter(item => !item.includes(user.userId)) || [];
             const sessionUpdatedUser = { id: sessionUser.id, matches: sessionUpdatedMatches, likes: sessionUpdatedLikes };
 
             const matchUserData = (await getUser(user.id));
@@ -134,10 +137,11 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
             const matchUserMatches = matchUserData.matches;
             const matchUserLikes = matchUserData.likes;
 
-            const matchUpdatedMatches = matchUserMatches.filter(item => !item.includes(sessionUser.id));
-            const matchUpdatedLikes = matchUserLikes.filter(item => !item.includes(sessionUser.userId));
+            const matchUpdatedMatches = matchUserMatches.filter((item: string | string[]) => !item.includes(sessionUser.id));
+            const matchUpdatedLikes = matchUserLikes.filter((item: string | string[]) => !item.includes(sessionUser.userId));
             const matchUpdatedUser = { id: user.id, matches: matchUpdatedMatches, likes: matchUpdatedLikes };
 
+            // as always, these cause squiggly lines, but they are correct
             await userTrigger(sessionUpdatedUser);
             await userTrigger(matchUpdatedUser);
 
@@ -148,8 +152,8 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
 
     return (
         <div className="flex h-screen">
-            {/* Left panel */}
-            <div className={`w-2/3 bg-gradient-to-r from-${sessionUser.primary_palette.toString().toLowerCase()}-300 to-${sessionUser.secondary_palette.toString().toLowerCase()}-400 p-4 overflow-y-auto shadow-lg rounded-lg`}>
+            {/* the left panel of the rendered chat component (shows all the active matches + convo details) */}
+            <div className={`w-2/3 bg-gradient-to-r from-${sessionUser.primary_palette ? sessionUser.primary_palette.toString().toLowerCase() : 'indigo'}-300 to-${sessionUser.secondary_palette ? sessionUser.secondary_palette.toString().toLowerCase() : 'pink'}-400 p-4 overflow-y-auto shadow-lg rounded-lg`}>
                 <h1 className="text-2xl font-bold text-white mb-6">Chats</h1>
                 <div>
                     {userDetails.map((user, index) => {
@@ -192,9 +196,9 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
                         {userDetails.find(user => user.userId === activeChat) && (
                             <div className="flex items-center">
                                 <h2 className="text-lg font-semibold">
-                                    {userDetails.find(user => user.userId === activeChat).displayName}
+                                    {userDetails.find(user => user.userId === activeChat)?.displayName}
                                 </h2>
-                                {userDetails.find(user => user.userId === activeChat).isVerified === 'true' && (
+                                {userDetails.find(user => user.userId === activeChat)?.isVerified === 'true' && (
                                     <CheckBadgeIcon className={`h-4 w-4 text-${sessionColor}-500 ml-1`} />
                                 )}
                             </div>

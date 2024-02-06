@@ -1,6 +1,7 @@
 import { UsersRecord } from "@/xata";
 
 export default function calculateAge(user: UsersRecord): number {
+    
     /*
         NAME
 
@@ -9,7 +10,7 @@ export default function calculateAge(user: UsersRecord): number {
         SYNOPSIS
 
             calculateAge(user)
-                - user: JSON object - the user whose age is being calculated
+                - user: UsersRecord - the user whose age is being calculated
 
         DESCRIPTION
 
@@ -18,11 +19,11 @@ export default function calculateAge(user: UsersRecord): number {
     */
 
     const today = new Date();
-    const birthday = new Date(user.birthday);
-    let ageThisYear = today.getFullYear() - birthday.getFullYear();
+    const birthday = user.birthday ? new Date(user.birthday) : null;
+    let ageThisYear = today.getFullYear() - (birthday ? birthday.getFullYear() : 0);
 
-    // Adjust age if the user hasn't had their birthday yet this year
-    if (today < new Date(today.getFullYear(), birthday.getMonth(), birthday.getDate())) {
+    // adjust age if the user hasn't had their birthday yet this year
+    if (birthday && today < new Date(today.getFullYear(), birthday.getMonth(), birthday.getDate())) {
         ageThisYear--;
     }
     return ageThisYear;

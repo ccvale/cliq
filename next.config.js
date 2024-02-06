@@ -36,7 +36,7 @@ const nextConfig = {
 
 /**
  * This is needed to make the remote images work with our application.
- * For example, when we are receiving a user profile picture from a Kinde sign-in/sign-up, we need to make sure
+ * For example, when we are receiving a user profile picture from a Clerk sign-in/sign-up, we need to make sure
  * that the image is understood by our application, so that we are able to use it moving forward.
  */
 

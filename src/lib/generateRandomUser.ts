@@ -1,5 +1,3 @@
-import { User } from '../../types';
-
 // This is where a majority of the remaining logic for early generated test data is stored...these are no longer used
 // The logic here is that we have a set list of random names, ages, positions, companies, bios, locations, interests, and palettes
 // That would be used to generate a random user, to be fit into a sample card for the app.
@@ -64,7 +62,7 @@ const getRandomValue = (array: Array<any>) => {
     return array[randomIndex];
 };
 
-export const generateRandomUser = (): User => {
+export const generateRandomUser = () => {
     const randomName = getRandomValue(names);
     const randomAge = getRandomValue(ages);
     const randomPosition = getRandomValue(positions);

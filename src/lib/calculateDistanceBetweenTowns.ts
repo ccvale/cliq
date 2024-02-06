@@ -2,6 +2,7 @@ import haversine from 'haversine-distance';
 import geocoding from '@/lib/geocoding';
 
 export default async function calculateDistanceBetweenTowns(town1: string, town2: string): Promise<number> {
+    
     /*
         NAME
 
@@ -21,6 +22,7 @@ export default async function calculateDistanceBetweenTowns(town1: string, town2
             This function is using a `geocoding` API call to get the coordinates of the towns, and then using the `haversine` library to calculate the distance.
     */
 
+    // leveraging the geocoding function to get the coordinates of the towns
     const town1Coordinates = await geocoding(town1);
     const town2Coordinates = await geocoding(town2);
     if (!town1Coordinates || !town2Coordinates) {

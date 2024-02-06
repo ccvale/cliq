@@ -3,6 +3,7 @@ import calculateAge from "./calculateAge";
 
 // fix the typing for the users array
 export default function scoringAlgorithm(sessionUser: UsersRecord, users: UsersRecord[]) {
+    
     /*
         NAME
 
@@ -11,8 +12,8 @@ export default function scoringAlgorithm(sessionUser: UsersRecord, users: UsersR
         SYNOPSIS
 
             scoringAlgorithm(sessionUser, users)
-                - sessionUser: JSON object - the user who is currently logged in
-                - users: array of JSON objects - the filtered users to score
+                - sessionUser: UsersRecord - the user who is currently logged in
+                - users: array of type UsersRecord - the filtered users to score
 
         DESCRIPTION
 
