@@ -6,8 +6,15 @@ import { JSONData } from '@xata.io/client';
 import updateUser from '../../lib/updateUser';
 import useSWRMutation from 'swr/mutation'
 import { SettingsFormData } from '../../../types';
-import { paletteOptions, interestOptions } from '../../../types';
 
+
+/* I tried to use these 'options' in types.d.ts, but it was causing a lot of issues, so I'm just going to leave them here for now */
+
+// these are the color options for the palette - all tailwind compatible colors 
+export const paletteOptions = ['Slate', 'Orange', 'Gray', 'Yellow', 'Zinc', 'Green', 'Neutral', 'Blue', 'Stone', 'Indigo', 'Red', 'Purple', 'Pink', 'Amber', 'Cyan', 'Violet', 'Lime', 'Rose', 'Teal'];
+
+// would add more of these in a real app, but since this is a project, I'm just going to leave it at this selection
+export const interestOptions = ['Art', 'Business', 'Education', 'Entertainment', 'Fashion', 'Finance', 'Food', 'Health', 'History', 'Lifestyle', 'Music', 'News', 'Politics', 'Science', 'Sports', 'Technology', 'Travel', 'Video Games', 'Yoga', 'Writing', 'Working Out', 'Gardening', 'TV', 'Singing', 'Fishing'];
 
 interface props {
     record: JSONData<UsersRecord>;
@@ -141,8 +148,8 @@ export default function SettingsPage({ record }: props) {
     // logic here: on submit, we show a popup to the user to let them know their settings have been updated successfully
     // we are also displaying the form, which is composed of many elements, including text inputs, select inputs, and range inputs
     // on default, we show their set values or default values, which is for the user to interact with, and submit into our database
-return (
-    <>
+    return (
+        <>
         {showPopup && (
             <div className={`absolute top-0 left-0 right-0 bg-gradient-to-r from-${record.primary_palette?.toString().toLowerCase()}-500 to-${record.secondary_palette?.toString().toLowerCase()}-300 text-white font-semibold p-4 text-center`}>
                 Settings Updated Successfully!

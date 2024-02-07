@@ -1,7 +1,6 @@
 import { UsersRecord } from './src/xata';
 //This file is where additional types outside of the generated types from our database are stored - there are instances where we want to use a subset of this data, or we want to use a different type of data than what is generated from the database - this is where we store that data
 
-import UsersRecord from './src/xata';
 
 // this type specifies the data that is sent to the server when a user is created
 export type SettingsFormData = {
@@ -20,13 +19,13 @@ export type SettingsFormData = {
     third_interest: string | JSONData,
     age_filter: [string | JSONData, string | JSONData],
     location_filter: [string | JSONData, string | JSONData]
-}
+};
 
 // this type handles a modifed state of UsersRecord, where we extend to include relevant Clerk data
 export interface ExtendedUser extends UsersRecord {
     image: string | undefined,
     cardTheme: string | undefined
-}
+};
 
 // this type is used to handle data to render with user information on the chat end
 export type MinimizedChatData = {
@@ -35,7 +34,7 @@ export type MinimizedChatData = {
     displayName: string,
     imageUrl: string,
     isVerified: string
-}
+};
 
 // type that handles data for messages
 export type MessageMetadata = {
@@ -48,7 +47,7 @@ export type MessageMetadata = {
         updatedAt: string | Date,
         version: number
     }
-}
+};
 
 // quick unmatch/popup user data
 export type PopupUser = {
@@ -57,13 +56,9 @@ export type PopupUser = {
     displayName: string,
     imageUrl: string,
     isVerified: string
-}
+};
 
-// these are the color options for the palette - all tailwind compatible colors 
-export const paletteOptions = ['Slate', 'Orange', 'Gray', 'Yellow', 'Zinc', 'Green', 'Neutral', 'Blue', 'Stone', 'Indigo', 'Red', 'Purple', 'Pink', 'Amber', 'Cyan', 'Violet', 'Lime', 'Rose', 'Teal'];
 
-// would add more of these in a real app, but since this is a project, I'm just going to leave it at this selection
-export const interestOptions = ['Art', 'Business', 'Education', 'Entertainment', 'Fashion', 'Finance', 'Food', 'Health', 'History', 'Lifestyle', 'Music', 'News', 'Politics', 'Science', 'Sports', 'Technology', 'Travel', 'Video Games', 'Yoga', 'Writing', 'Working Out', 'Gardening', 'TV', 'Singing', 'Fishing'];
 
 
 
@@ -75,7 +70,7 @@ export const interestOptions = ['Art', 'Business', 'Education', 'Entertainment',
 //
 //
 
-export const paletteOptions: string[] = ['Slate', 'Orange', 'Gray', 'Yellow', 'Zinc', 'Green', 'Neutral', 'Blue', 'Stone', 'Indigo', 'Red', 'Purple', 'Pink', 'Amber', 'Cyan', 'Violet', 'Lime', 'Rose', 'Teal'];
+//export const paletteOptions: string[] = ['Slate', 'Orange', 'Gray', 'Yellow', 'Zinc', 'Green', 'Neutral', 'Blue', 'Stone', 'Indigo', 'Red', 'Purple', 'Pink', 'Amber', 'Cyan', 'Violet', 'Lime', 'Rose', 'Teal'];
 
 export type TestUser = {
     name: string,
@@ -86,11 +81,11 @@ export type TestUser = {
     location?: string,
     interests?: string[],
     palette: string[],
-}
+};
 
 
 
-export const interestOptions: string[] = [
+/* export const interestOptions: string[] = [
     'Basketball', 'Football', 'Soccer', 'Baseball', 'Hockey',
     'Golf', 'Tennis', 'Volleyball', 'Running', 'Swimming',
     'Cycling', 'Hiking', 'Skiing', 'Snowboarding', 'Skateboarding',
@@ -100,3 +95,4 @@ export const interestOptions: string[] = [
     'Singing', 'Playing an Instrument', 'Writing', 'Reading',
     'Watching Movies', 'Watching TV', 'Video Games', 'Board Games'
 ];
+*/
