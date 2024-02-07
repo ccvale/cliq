@@ -28,7 +28,7 @@ export default async function updateUser(url: any, data: any) {
 
     const options: RequestInit = {
         method: 'PATCH', // since we want to *update* the user information
-        headers: { Authorization: process.env.NEXT_PUBLIC_XATA_BEARER || '', 'Content-Type': 'application/json' },
+        headers: { Authorization: 'Bearer xau_9RD7mvkOgZ1L4WGnagqll6rBdvOWJim81', 'Content-Type': 'application/json' },
         body: JSON.stringify(data['arg']) // converting the data to proper JSON format
     };
 

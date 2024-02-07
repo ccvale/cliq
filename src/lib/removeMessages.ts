@@ -28,7 +28,7 @@ export default async function removeMessages(baseUrl: string, messageIds: any) {
         const options = {
             method: 'DELETE', // since we are deleting a message, we use the DELETE method
             headers: {
-                Authorization: process.env.NEXT_PUBLIC_XATA_BEARER || '',
+                Authorization: 'Bearer xau_9RD7mvkOgZ1L4WGnagqll6rBdvOWJim81',
                 'Content-Type': 'application/json'
             },
         };
