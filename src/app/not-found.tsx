@@ -24,7 +24,7 @@ export default function NotFound() {
             </div>
             
             <div className="text-center pt-16 text-2xl text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>
-                This page doesn't exist...how about you try one that does?
+                This page doesn&apos;t exist...how about you try one that does?
             </div>
             
       </div>
