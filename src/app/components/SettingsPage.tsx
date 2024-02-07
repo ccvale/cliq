@@ -20,7 +20,6 @@ interface props {
     record: JSONData<UsersRecord>;
 }
 
-
 export default function SettingsPage({ record }: props) {
     /*
         NAME

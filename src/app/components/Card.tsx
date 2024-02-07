@@ -206,6 +206,10 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
         swipeMessage = 'You sure are friendly!';
     }
 
+    // the logic here:
+    // if there are still users in the queue, queue up the next user
+    // if there are no more users in the queue, display a message to the user
+    // on swipe, or button click, respond accordingly
     return (
         <div>
             {users.length > 0 && currentIndex < users.length ? (
