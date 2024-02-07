@@ -80,7 +80,6 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
             messagesEndRef.current.scrollTop = messagesEndRef.current.scrollHeight;
         }
     };
-    
 
     useEffect(() => {
         scrollToBottom();
@@ -92,23 +91,23 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
         let lastMessageTimestamps = {};
 
         matchMessages.forEach((message) => {
+            // the other user's id is the id of the user that is not the current user...we need this to associate the chat with the user
             const otherUserId = message.sender_id === sessionUser.userId ? message.receiver_id : message.sender_id;
             if (!chats[otherUserId]) {
                 chats[otherUserId] = [];
             }
             chats[otherUserId].push(message);
 
-            // Update the last message timestamp for sorting
+            // we need to keep track of the last message timestamp for each user, so we can sort the user details based on this
             const messageTimestamp = new Date(message.xata?.updatedAt || message.createdAt).getTime();
             lastMessageTimestamps[otherUserId] = Math.max(lastMessageTimestamps[otherUserId] || 0, messageTimestamp);
         });
 
-        // Sort userDetails based on the most recent message timestamp
+        // sorting the user details based on the last message timestamp, so we can display the most recent chats first
         const sortedUserDetails = userDetails.sort((a, b) => lastMessageTimestamps[b.userId] - lastMessageTimestamps[a.userId]);
 
         setOrganizedChats(chats);
-        // Assuming you have a way to update userDetails order, you might need to set it here
-        setUserDetails(sortedUserDetails); // This is a pseudo-code line, adjust according to your state management
+        setUserDetails(sortedUserDetails); // update the user details with the sorted user details
     }, [matchMessages, sessionUser.userId, userDetails]);
 
 
