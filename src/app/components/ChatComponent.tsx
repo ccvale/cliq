@@ -9,6 +9,7 @@ import io from 'socket.io-client';
 import CheckBadgeIcon from '@heroicons/react/24/solid/CheckBadgeIcon';
 import { UsersRecord } from '@/xata';
 import { MessageMetadata, MinimizedChatData, PopupUser, ExtendedUser } from '../../../types';
+import removeMessages from '@/lib/removeMessages';
 
 
 type Props = {
@@ -53,9 +54,11 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
     const [currentChatHistory, setCurrentChatHistory] = useState([]);
     const [nMessage, setNewMessage] = useState("");
     const [organizedChats, setOrganizedChats] = useState({});
+    const [nUserDetails, setUserDetails] = useState(userDetails);
 
     const { trigger } = useSWRMutation('/api/newMessage', newMessage);
     const { trigger: userTrigger } = useSWRMutation('/api/updateUser', updateUser);
+    const {trigger: unmatchTrigger} = useSWRMutation('/api/removeMessages', removeMessages);
 
     // setting up useRef to let us scroll to the bottom of the chat for each conversation window clicked
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -77,6 +80,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
             messagesEndRef.current.scrollTop = messagesEndRef.current.scrollHeight;
         }
     };
+    
 
     useEffect(() => {
         scrollToBottom();
@@ -85,16 +89,27 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
     // organizing chats to associate each chat with the user it is with
     useEffect(() => {
         const chats = {};
-        matchMessages.forEach((message: { sender_id: any; receiver_id: any; message: string; }) => {
-            // if the message is from the current user, the other user is the receiver, and vice versa
+        let lastMessageTimestamps = {};
+
+        matchMessages.forEach((message) => {
             const otherUserId = message.sender_id === sessionUser.userId ? message.receiver_id : message.sender_id;
             if (!chats[otherUserId]) {
                 chats[otherUserId] = [];
             }
             chats[otherUserId].push(message);
+
+            // Update the last message timestamp for sorting
+            const messageTimestamp = new Date(message.xata?.updatedAt || message.createdAt).getTime();
+            lastMessageTimestamps[otherUserId] = Math.max(lastMessageTimestamps[otherUserId] || 0, messageTimestamp);
         });
+
+        // Sort userDetails based on the most recent message timestamp
+        const sortedUserDetails = userDetails.sort((a, b) => lastMessageTimestamps[b.userId] - lastMessageTimestamps[a.userId]);
+
         setOrganizedChats(chats);
-    }, [matchMessages, sessionUser.userId]);
+        // Assuming you have a way to update userDetails order, you might need to set it here
+        setUserDetails(sortedUserDetails); // This is a pseudo-code line, adjust according to your state management
+    }, [matchMessages, sessionUser.userId, userDetails]);
 
 
     // used to set the current chat history to the active chat (the chat that the user has selected)
@@ -118,6 +133,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
             socket.off('receiveMessage');
         };
     }, []);
+    
 
 
     const handleSendMessage = async () => {
@@ -209,10 +225,20 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
             const matchUpdatedLikes = matchUserLikes.filter((item: string | string[]) => !item.includes(sessionUser.userId));
             const matchUpdatedUser = { id: user.id, matches: matchUpdatedMatches, likes: matchUpdatedLikes };
 
+            // in messages, we need to remove the chat history between the two users in the database
+            
+
+            // get the messages between the two users
+            const messageIds = matchMessages.filter((message) => {
+                return (message.sender_id === sessionUser.userId && message.receiver_id === user.userId) ||
+                    (message.sender_id === user.userId && message.receiver_id === sessionUser.userId);
+            }).map((message) => message.id);
+
+
             // as always, these cause squiggly lines, but they are correct
+            await unmatchTrigger(messageIds);
             await userTrigger(sessionUpdatedUser);
             await userTrigger(matchUpdatedUser);
-
 
             window.location.reload(); // reloading the page to reflect the change in matches
         }

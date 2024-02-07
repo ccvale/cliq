@@ -7,7 +7,7 @@ import { authMiddleware } from "@clerk/nextjs";
 // This is another generated file that is used to protect routes from unauthorized access
 
 export default authMiddleware({
-    publicRoutes: ['/', '/api/updateUser', '/api/newMessage/db/click:main/tables/messages/data']
+    publicRoutes: ['/', '/api/updateUser', '/api/newMessage/db/click:main/tables/messages/data', '/api/removeMessages/']
 });
 
 export const config = {
