@@ -184,7 +184,7 @@ export default function SettingsPage({ record }: props) {
                 </div>
 
                 <div className="w-full mb-4">
-                    <label className="block text-xl mb-2">Location <span className="italic text-sm">- Where are you checking in from?</span>
+                    <label className="block text-xl mb-2">Location <span className="italic text-sm">- Where are you checking in from? (ex. Sacramento, CA)</span>
                         
                         <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} className="text-sm text-indigo-400 w-full p-2 rounded" />
 
