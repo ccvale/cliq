@@ -13,6 +13,7 @@ import calculateAge from '@/lib/calculateAge';
 import calculateDistanceBetweenTowns from '@/lib/calculateDistanceBetweenTowns';
 import { UsersRecord } from '@/xata';
 import { ExtendedUser } from '../../../types';
+import getUser from '@/lib/getUser';
 
 type Props = {
     sessionUser: ExtendedUser,
@@ -144,18 +145,27 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
         */
 
         if (!(currentIndex >= users.length)) {
+
+            const sessionUserData = (await getUser(sessionUser.id));
+            const likedUserData = (await getUser(users[currentIndex].id));
+            const likedUserMatches = likedUserData.matches;
+
+            const sessionUserLikes = sessionUserData.likes;
+            const sessionUserMatches = sessionUserData.matches;
+        
+            
             setCurrentIndex(currentIndex + 1); // move to the next user in the queue
 
             if (direction === 'right') {
                 setRightSwipes(prev => prev + 1);
                 const liked = users[currentIndex];
                 // if other user has this user in likes already, its a match (both users have liked each other)
-                const isMatch = liked.likes?.includes(sessionUser.userId) || false; 
+                const isMatch = sessionUserLikes?.includes(sessionUser.userId) || false; 
                 // we want to add the user id to the sessionUser's liked array, then also check for match...if match, add to matches array
                 
                 // updating a like for just the session user - since only the session user is swiping
                 const sessionUserLike = sessionUser.likes
-                    ? [...sessionUser.likes, liked.userId]
+                    ? [...sessionUserLikes, liked.userId]
                     : [liked.userId];
                 
                 // updating the session user's data and the other user's data:
@@ -164,19 +174,19 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
                     id: sessionUser.id,
                     likes: sessionUserLike,
                     matches: isMatch
-                        ? (sessionUser.matches
-                            ? [...sessionUser.matches, `${liked.id} - ${liked.userId} - ${liked.display_name} - ${liked.image} - ${liked.isVerified}`]
+                        ? (sessionUserMatches
+                            ? [...sessionUserMatches, `${liked.id} - ${liked.userId} - ${liked.display_name} - ${liked.image} - ${liked.isVerified}`]
                             : [`${liked.id} - ${liked.userId} - ${liked.display_name} - ${liked.image} - ${liked.isVerified}`])
-                        : sessionUser.matches
+                        : sessionUserMatches
                 };
 
                 const updatedOtherData = {
                     id: liked.id,
                     matches: isMatch
-                        ? (liked.matches
-                            ? [...liked.matches, `${sessionUser.id} - ${sessionUser.userId} - ${sessionUser.display_name} - ${sessionUser.image} - ${sessionUser.isVerified}`]
+                        ? (likedUserMatches
+                            ? [...likedUserMatches, `${sessionUser.id} - ${sessionUser.userId} - ${sessionUser.display_name} - ${sessionUser.image} - ${sessionUser.isVerified}`]
                             : [`${sessionUser.id} - ${sessionUser.userId} - ${sessionUser.display_name} - ${sessionUser.image} - ${sessionUser.isVerified}`])
-                        : liked.matches
+                        : likedUserMatches
                 };
 
                 // these lines continue to give warnings, but the logic continues to be correct
