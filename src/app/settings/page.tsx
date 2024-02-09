@@ -26,13 +26,14 @@ export default async function Settings() {
   
   // if the user doesn't exist in the xata database, we want to add them (they are authenticated and exist in the clerk database first)
   // when we revalidate path, we are essentially telling the page to re-render with the new data
-    if (!fetchedUser) {
+    
+    /* if (!fetchedUser) {
         if (userId) {
           await xataClient.db.Users.create({ userId });
           revalidatePath('/settings');
         }
       revalidatePath('/settings');
-    }
+    } */
 
   const record = fetchedUser ? fetchedUser.toSerializable() : null;
   

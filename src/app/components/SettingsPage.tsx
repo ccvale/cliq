@@ -6,7 +6,8 @@ import { JSONData } from '@xata.io/client';
 import updateUser from '../../lib/updateUser';
 import useSWRMutation from 'swr/mutation'
 import { SettingsFormData } from '../../../types';
-
+//import { useJsApiLoader, Autocomplete } from '@react-google-maps/api';
+import Autocomplete from "react-google-autocomplete";
 
 /* I tried to use these 'options' in types.d.ts, but it was causing a lot of issues, so I'm just going to leave them here for now */
 
@@ -19,6 +20,8 @@ export const interestOptions = ['Art', 'Business', 'Education', 'Entertainment',
 interface props {
     record: JSONData<UsersRecord>;
 }
+
+const libraries = ["places"];
 
 export default function SettingsPage({ record }: props) {
     /*
@@ -183,13 +186,24 @@ export default function SettingsPage({ record }: props) {
                     </label>
                 </div>
 
-                <div className="w-full mb-4">
-                    <label className="block text-xl mb-2">Location <span className="italic text-sm">- Where are you checking in from? (ex. Sacramento, CA)</span>
-                        
-                        <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} className="text-sm text-indigo-400 w-full p-2 rounded" />
+                    <div className="w-full mb-4">
+                        <label className="block text-xl mb-2">Location <span className="italic text-sm">- Where are you checking in from? (ex. Sacramento, CA)</span>
+                            {(
+                                <Autocomplete
+                                    className="text-sm text-indigo-400 w-full p-2 rounded"
+                                    apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+                                    defaultValue={location.toString()}
+                                    onPlaceSelected={(place) => {
+                                        let town = place?.address_components?.[0]?.long_name ?? '';
+                                        let state = place?.address_components?.[2]?.short_name ?? '';
+                                        setLocation(`${town}, ${state}`);
+                                    }}
+                                >
+                                </Autocomplete>
+                            )}
+                        </label>
+                    </div>
 
-                    </label>
-                </div>
 
                 <div className="w-full mb-4">
                     <label className="block text-xl mb-2">Current Gig <span className="italic text-sm">- (ex. Student at Duke, Data Scientist at Meta)</span>

@@ -14,19 +14,20 @@ export default async function geocoding(location: string): Promise<[number, numb
 
         DESCRIPTION
         
-            This function will calculate the age of the user, by using the OpenCage Geocoding API to get the latitude and longitude of a location,
+            This function will calculate the age of the user, by using the Google Maps Geocoding API to get the latitude and longitude of a location,
             and then return the latitude and longitude of the location. We take this information and use it to calculate the distance between two users 
             in the matching algorithm.
     */
     
-    const api_url = 'https://api.opencagedata.com/geocode/v1/json';
-    const request_url = `${api_url}?key=${process.env.NEXT_PUBLIC_OPEN_CAGE_API_KEY}&q=${encodeURIComponent(location)}&pretty=1&no_annotations=1`;
+    const api_url = 'https://maps.googleapis.com/maps/api/geocode/' //replaced opencage with google maps (great choice, way better)
+    const request_url = `${api_url}json?address=${encodeURIComponent(location)}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`;
+
 
     try {
         const response = await axios.get(request_url);
         const data = response.data;
-        const lat = data.results[0].bounds.northeast.lat;
-        const lng = data.results[0].bounds.northeast.lng;
+        const lat = data.results[0].geometry.location.lat;
+        const lng = data.results[0].geometry.location.lng;
 
         if (typeof lat === 'number' && typeof lng === 'number') {
             return [lat, lng];
