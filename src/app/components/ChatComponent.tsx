@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useState, useEffect, useRef } from 'react';
 import useSWRMutation from 'swr/mutation';
 import newMessage from '@/lib/newMessage';
@@ -74,13 +75,14 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
     const selectorColor = `bg-${sessionColor}-300`
     const selectorHover = `hover:bg-${sessionColor}-200`
 
-    // the way we scroll to the bottom of the chat window
+    // the way we scroll to the bottom of the chat window - utilizing the useRef hook to our specified div (in the html)
     const scrollToBottom = () => {
         if (messagesEndRef.current) {
             messagesEndRef.current.scrollTop = messagesEndRef.current.scrollHeight;
         }
     };
 
+    // we want to then utilize the scrollToBottom function to scroll to the bottom of the chat window for each conversation window clicked
     useEffect(() => {
         scrollToBottom();
     }, [organizedChats[activeChat]?.length]);
@@ -96,7 +98,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
             if (!chats[otherUserId]) {
                 chats[otherUserId] = [];
             }
-            chats[otherUserId].push(message);
+            chats[otherUserId].push(message); // associate the chat with the user "logs"
 
             // we need to keep track of the last message timestamp for each user, so we can sort the user details based on this
             const messageTimestamp = new Date(message.xata?.updatedAt || message.createdAt).getTime();
@@ -167,6 +169,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
             setCurrentChatHistory(prevHistory => [...prevHistory, newSentMessage]);
 
             // we also need to update the organized chats with the new message
+            // either we are adding to an existing chat, or we are creating a new chat
             setOrganizedChats(prevChats => ({
                 ...prevChats,
                 [activeChat]: [...(prevChats[activeChat] || []), newSentMessage]
@@ -179,7 +182,8 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
                 const response = await trigger(newSentMessage);
                 await socket.emit('sendMessage', newSentMessage); // needs to await, even though it says it doesn't
                 //console.log("Message sent, server response:", response);
-            } catch (error) {
+            }
+            catch (error) {
                 console.error("Failed to send message:", error);
                 // Handle failed message sending (e.g., show an error message)
             }
@@ -369,8 +373,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
 
                         <button
                             onClick={handleSendMessage}
-                            className={`${primaryAccent} text-white px-4 py-2 rounded-lg ${selectorHover}`}
-                        >
+                            className={`${primaryAccent} text-white px-4 py-2 rounded-lg ${selectorHover}`}>
                             Send
                         </button>
 

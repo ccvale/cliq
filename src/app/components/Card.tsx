@@ -151,18 +151,25 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
 
             if (direction === 'right') {
 
-                const sessionUserData = (await getUser(sessionUser.id));
-                const likedUserData = (await getUser(users[currentIndex].id));
-                
-                const likedUserLikes = likedUserData.likes;
-                const likedUserMatches = likedUserData.matches;
+                // huge bug was found and fixed with this:
+                // in every previous iteration, we were updating the likes on the first pulled version of the user likes.
+                // meaning, if a user liked multiple users, it would overwrite the likes array with the most recent like
+                // the fix here was to utilize the getUser method which already existed to make sure that every time
+                // we try to update data, it is the most recent data that we are updating...
+                const liked = users[currentIndex];
 
+                const sessionUserData = (await getUser(sessionUser.id));
                 const sessionUserLikes = sessionUserData.likes;
                 const sessionUserMatches = sessionUserData.matches;
 
+                const likedUserData = (await getUser(liked.id));
+                const likedUserLikes = likedUserData.likes;
+                const likedUserMatches = likedUserData.matches;
 
+                // update the swipe history
                 setRightSwipes(prev => prev + 1);
-                const liked = users[currentIndex];
+
+                
                 // if other user has this user in likes already, its a match (both users have liked each other)
                 const isMatch = likedUserLikes?.includes(sessionUser.userId) || false; 
                 // we want to add the user id to the sessionUser's liked array, then also check for match...if match, add to matches array
@@ -172,8 +179,7 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
                     ? [...sessionUserLikes, liked.userId]
                     : [liked.userId];
                 
-                // updating the session user's data and the other user's data:
-
+                // updating the session user's data - also modified the format here to fix the aforementioned bug
                 const updatedSessionData = {
                     id: sessionUser.id,
                     likes: sessionUserLike,
@@ -183,7 +189,8 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
                             : [`${liked.id} - ${liked.userId} - ${liked.display_name} - ${liked.image} - ${liked.isVerified}`])
                         : sessionUserMatches
                 };
-
+                
+                // and the other user's data - also modified the format here as well to fix the aforementioned bug
                 const updatedOtherData = {
                     id: liked.id,
                     matches: isMatch
