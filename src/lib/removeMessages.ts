@@ -19,16 +19,15 @@ export default async function removeMessages(baseUrl: string, messageIds: any) {
         The function returns a Promise that resolves once all messages have been deleted.
     */
     
-    const actualIds = messageIds['arg'];
+    const actualIds = messageIds['arg']; // get the message IDs from the data object
 
 
     // Iterate through each messageId and perform a fetch DELETE request
     const deletePromises = actualIds.map((messageId) => {
-
         const options = {
             method: 'DELETE', // since we are deleting a message, we use the DELETE method
             headers: {
-                Authorization: process.env.NEXT_PUBLIC_XATA_BEARER || '',
+                Authorization: process.env.NEXT_PUBLIC_XATA_BEARER || '', // typescript again...this is given to us, and will never be undefined but it's not happy
                 'Content-Type': 'application/json'
             },
         };
@@ -39,7 +38,7 @@ export default async function removeMessages(baseUrl: string, messageIds: any) {
                     // if the response is not ok, throw an error
                     throw new Error(`Failed to delete message ${messageId}: ${response.statusText}`);
                 }
-                // but if we do get a response, return the response as a JSON object (if it exists)
+                // but if we do get a response, return the response as a JSON object (if it exists) - these have been helpful for debugging
                 return response.text().then(text => text ? JSON.parse(text) : {});
             })
             .then(response => console.log(`Deleted message ${messageId}:`, response))
@@ -48,8 +47,8 @@ export default async function removeMessages(baseUrl: string, messageIds: any) {
 
     try {
         await Promise.all(deletePromises);
-        console.log("All specified messages have been deleted.");
+        //console.log('All specified messages have been deleted.');
     } catch (err) {
-        console.error("An error occurred while deleting messages:", err);
+        console.error('An error occurred while deleting messages:', err);
     }
 }

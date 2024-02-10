@@ -42,7 +42,6 @@ export default async function Dashboard() {
   
   // but if it doesn't exist, we want to create this user
   if (!userPreferences) {
-    console.log('first call: user doesnt exist', userPreferences); // we want to see what the user preferences are
 
     let newUser = await xataClient.db.Users.create({
       userId: user?.id,
@@ -53,11 +52,9 @@ export default async function Dashboard() {
       display_name: 'N/A',
       location: 'N/A',
     })
-    console.log(newUser.birthday);
 
     userPreferences = newUser; // we want to set the user preferences to point at the new user
 
-    console.log('we have changed the user preferences', userPreferences);
   }
 
   // we want to give our user a message to go to the settings page and set up their profile before they start swiping
@@ -65,8 +62,8 @@ export default async function Dashboard() {
   // we want the dashboard to handle this case explicitly, so users will not be able to interact with the swipe queue until they update their profile
   if (!userPreferences || userPreferences.xata.version < 1) {
     return (
-      <div className="text-center pt-52 text-2xl text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>
-        Welcome! You should probably go to the <span className="italic">settings page</span> first to set up your profile!
+      <div className='text-center pt-52 text-2xl text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300' style={{ userSelect: 'none' }}>
+        Welcome! You should probably go to the <span className='italic'>settings page</span> first to set up your profile!
       </div>
     )
   }

@@ -45,8 +45,8 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [distanceTags, setDistanceTags] = useState<string[]>(new Array(filteredUsers.length).fill('Calculating distance...'));
     const [image, setImages] = useState([]); // array of image urls
-    const [age, setAge] = useState<(number | "N/A")[]>([]);
-    const defaultUserLocation = "N/A, N/A";
+    const [age, setAge] = useState<(number | 'N/A')[]>([]);
+    const defaultUserLocation = 'N/A, N/A';
     
     // this is the swr mutation hook that will be used to update the user's likes and matches
     const { trigger } = useSWRMutation('/api/updateUser', updateUser);
@@ -56,7 +56,7 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
 
 
     useEffect(() => {
-        setUsers(filteredUsers); // filteredUsers are sorted by "score"
+        setUsers(filteredUsers); // filteredUsers are sorted by 'score'
 
         fetchDistances(filteredUsers);
         fetchAge(filteredUsers);
@@ -85,7 +85,7 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
             users.map(async (user) => {
                 if (user.location) {
                     const distance = await calculateDistanceBetweenTowns(sessionUser.location, user.location);
-                    return distance >= 0 && distance < 10 ? "< 10 miles away" : `${distance} miles away`;
+                    return distance >= 0 && distance < 10 ? '< 10 miles away' : `${distance} miles away`;
                 }
                 return 'N/A miles away';
             })
@@ -229,6 +229,8 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
     // if there are still users in the queue, queue up the next user
     // if there are no more users in the queue, display a message to the user
     // on swipe, or button click, respond accordingly
+    // we want to render different messages based on the user's location status - if they haven't set a location, we want to tell them to do so
+    // we also want to render the session stats at the bottom of the page
     return (
         <div>
             {users.length > 0 && currentIndex < users.length ? (
@@ -241,38 +243,38 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
                 </TinderCard>
 
             ) : (
-                    <div className="text-center p-10">
+                    <div className='text-center p-10'>
                         {sessionUser.location !== 'N/A' ? (
                             <>
-                                <h2 className="text-2xl mb-1 font-bold text-indigo-700 hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>Wow! You must have been busy swiping!</h2>
-                                <p className="text-lg text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>There is nobody new to swipe on for now...come back later!</p>
+                                <h2 className='text-2xl mb-1 font-bold text-indigo-700 hover:text-indigo-900 transition-colors duration-300' style={{ userSelect: 'none' }}>Wow! You must have been busy swiping!</h2>
+                                <p className='text-lg text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300' style={{ userSelect: 'none' }}>There is nobody new to swipe on for now...come back later!</p>
                             </>
                         ) : (
                             <>
-                                <h2 className="text-2xl mb-1 font-bold text-indigo-700 hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>Slow your roll, friend!</h2>
-                                <p className="text-lg text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>You have to set a location first if you want to swipe!</p>
+                                <h2 className='text-2xl mb-1 font-bold text-indigo-700 hover:text-indigo-900 transition-colors duration-300' style={{ userSelect: 'none' }}>Slow your roll, friend!</h2>
+                                <p className='text-lg text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300' style={{ userSelect: 'none' }}>You have to set a location first if you want to swipe!</p>
                             </>
                         )}
                     </div>
             )}
 
-            <div className="flex flex-row justify-center items-center mx-auto -mt-8 gap-56">
+            <div className='flex flex-row justify-center items-center mx-auto -mt-8 gap-56'>
                 <button onClick={() => swiped('left')}>
-                    <ArrowLeftCircleIcon className="text-red-400 w-14 h-14" />
+                    <ArrowLeftCircleIcon className='text-red-400 w-14 h-14' />
                 </button>
 
                 <button onClick={() => swiped('right')}>
-                    <ArrowRightCircleIcon className="text-green-400 w-14 h-14" />
+                    <ArrowRightCircleIcon className='text-green-400 w-14 h-14' />
                 </button>
             </div>
 
             <div>
-                <section className="flex flex-col justify-center items-center text-center p-5">
-                    <h1 className="text-lg text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>Current session stats: </h1>
+                <section className='flex flex-col justify-center items-center text-center p-5'>
+                    <h1 className='text-lg text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300' style={{ userSelect: 'none' }}>Current session stats: </h1>
 
-                    <h1 className="text-lg text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>{rightSwipes} right swipes - {leftSwipes} left swipes</h1>
+                    <h1 className='text-lg text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300' style={{ userSelect: 'none' }}>{rightSwipes} right swipes - {leftSwipes} left swipes</h1>
 
-                    <h1 className="text-lg text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>{swipePercentage}% like rate <span className="italic text-sm">{swipeMessage}</span></h1>
+                    <h1 className='text-lg text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300' style={{ userSelect: 'none' }}>{swipePercentage}% like rate <span className='italic text-sm'>{swipeMessage}</span></h1>
                 </section>
             </div>
         </div>
@@ -303,35 +305,35 @@ function UserCard({ user, distanceTag }: { user: ExtendedUser, distanceTag: stri
     // for everything that the user has, fill it out as designed. by this point, cases where these values are null shouldn't exist in the first place, so we can assume that there will always be a value to be filled out
     return (
         <div className={user.cardTheme} style={{ userSelect: 'none' }}>
-            {user.image && <Image src={user.image} alt={`${user.display_name}'s profile`} width={500} height={500} className="h-20 w-20 object-cover rounded-full mx-auto block" />}
+            {user.image && <Image src={user.image} alt={`${user.display_name}'s profile`} width={500} height={500} className='h-20 w-20 object-cover rounded-full mx-auto block' />}
 
-            <h1 className="text-4xl flex items-center justify-center">
+            <h1 className='text-4xl flex items-center justify-center'>
                 {user.display_name}
-                {user.isVerified && <CheckBadgeIcon className="h-6 w-6 text-white ml-1" />}
+                {user.isVerified && <CheckBadgeIcon className='h-6 w-6 text-white ml-1' />}
             </h1>
 
-            <h2 className="text-3xl">{ageThisYear}</h2>
+            <h2 className='text-3xl'>{ageThisYear}</h2>
 
-            <span className="text-sm italic font-semibold">{distanceTag}</span>
+            <span className='text-sm italic font-semibold'>{distanceTag}</span>
 
-            <p className="text-center italic font-light whitespace-pre-line">{user.bio}</p>
+            <p className='text-center italic font-light whitespace-pre-line'>{user.bio}</p>
 
             <div className='flex items-center'>
-                <GlobeAltIcon className="h-5 w-5 mr-2" />
+                <GlobeAltIcon className='h-5 w-5 mr-2' />
                 <h3>{user.location}</h3>
             </div>
 
-            <div className="flex items-center">
-                <BriefcaseIcon className="h-5 w-5 mr-2" />
+            <div className='flex items-center'>
+                <BriefcaseIcon className='h-5 w-5 mr-2' />
                 <h3>{user.job_position} at {user.job_company}</h3>
             </div>
 
-            <div className="flex-grow">
+            <div className='flex-grow'>
                 <h3>Interests</h3>
 
-                <ul className="flex flex-row justify-center items-center gap-5 mx-auto py-2">
+                <ul className='flex flex-row justify-center items-center gap-5 mx-auto py-2'>
                     {[user.primary_interest, user.secondary_interest, user.third_interest]?.map((interest) => (
-                        <li key={interest} className="bg-white bg-opacity-40 rounded-full py-1 px-4">{interest}</li>
+                        <li key={interest} className='bg-white bg-opacity-40 rounded-full py-1 px-4'>{interest}</li>
                     ))}
                 </ul>
 

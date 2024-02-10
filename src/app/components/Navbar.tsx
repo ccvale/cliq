@@ -27,7 +27,7 @@ export default function Navbar() {
 
     const { user, isLoaded } = useUser();
     const [isLoading, setIsLoading] = useState(false);
-    const [redirectPage, setRedirectPage] = useState("");
+    const [redirectPage, setRedirectPage] = useState('');
 
     const handleNavigation = (e: MouseEvent<HTMLAnchorElement, MouseEvent>, href: string) => {
         // being used as a more explicit way to refresh on navigation - instances where we want to make sure all data is up to date
@@ -51,38 +51,38 @@ export default function Navbar() {
     return (
         <>
             {isLoading && <Loading redirectPage={redirectPage} />}
-            <nav className="flex justify-between items-center py-6 font-bold w-4/5 mx-auto bg-white">
-                <h1 className="text-2xl">
-                    <div className="cursor-pointer hover:-translate-y-1 transition-transform duration-300">
-                        <a href={user ? "/dashboard" : "/"} onClick={(e) => { if (user) handleNavigation(e, "/dashboard"); }}>
-                            <img src="/click_logo_black.png" width={90} height={100} alt="Cliq logo" />
+            <nav className='flex justify-between items-center py-6 font-bold w-4/5 mx-auto bg-white'>
+                <h1 className='text-2xl'>
+                    <div className='cursor-pointer hover:-translate-y-1 transition-transform duration-300'>
+                        <a href={user ? '/dashboard' : '/'} onClick={(e) => { if (user) handleNavigation(e, '/dashboard'); }}>
+                            <img src='/click_logo_black.png' width={90} height={100} alt='Cliq logo' />
                         </a>
                     </div>
                 </h1>
 
-                <div className="flex gap-4 items-center">
+                <div className='flex gap-4 items-center'>
                     {isLoaded && user && (
                         <>
-                            <a href="/chat" onClick={(e) => handleNavigation(e, "/chat")}>
-                                <div className="cursor-pointer hover:-translate-y-1 transition-transform duration-300">
-                                    <ChatBubbleOvalLeftEllipsisIcon className="w-10 h-10" />
+                            <a href='/chat' onClick={(e) => handleNavigation(e, '/chat')}>
+                                <div className='cursor-pointer hover:-translate-y-1 transition-transform duration-300'>
+                                    <ChatBubbleOvalLeftEllipsisIcon className='w-10 h-10' />
                                 </div>
                             </a>
 
-                            <Link href="/settings">
-                                <div className="cursor-pointer hover:-translate-y-1 transition-transform duration-300">
-                                    <Cog8ToothIcon className="w-10 h-10" />
+                            <Link href='/settings'>
+                                <div className='cursor-pointer hover:-translate-y-1 transition-transform duration-300'>
+                                    <Cog8ToothIcon className='w-10 h-10' />
                                 </div>
                             </Link>
 
-                            <div className="cursor-pointer hover:-translate-y-1 transition-transform duration-300">
-                                <UserButton afterSignOutUrl="/" />
+                            <div className='cursor-pointer hover:-translate-y-1 transition-transform duration-300'>
+                                <UserButton afterSignOutUrl='/' />
                             </div>
                         </>
                     )}
                     {isLoaded && !user && (
-                        <Link href="/sign-in">
-                            <button className="bg-gradient-to-r from-indigo-400 to-indigo-400 text-white px-4 py-2 rounded-lg hover:from-indigo-300 hover:to-indigo-300">Sign In</button>
+                        <Link href='/sign-in'>
+                            <button className='bg-gradient-to-r from-indigo-400 to-indigo-400 text-white px-4 py-2 rounded-lg hover:from-indigo-300 hover:to-indigo-300'>Sign In</button>
                         </Link>
                     )}
                 </div>

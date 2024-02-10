@@ -56,7 +56,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
 
     const [activeChat, setActiveChat] = useState(null);
     const [currentChatHistory, setCurrentChatHistory] = useState([]);
-    const [nMessage, setNewMessage] = useState("");
+    const [nMessage, setNewMessage] = useState('');
     const [organizedChats, setOrganizedChats] = useState({});
     const [nUserDetails, setUserDetails] = useState(userDetails);
 
@@ -69,8 +69,8 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
 
 
     // initializing and calculating the primary and secondary colors for the user
-    const sessionColor = sessionUser.primary_palette?.toString().toLowerCase() ?? "indigo";
-    const sessionSecondary = sessionUser.secondary_palette?.toString().toLowerCase() ?? "pink";
+    const sessionColor = sessionUser.primary_palette?.toString().toLowerCase() ?? 'indigo';
+    const sessionSecondary = sessionUser.secondary_palette?.toString().toLowerCase() ?? 'pink';
 
     const primaryAccent = `bg-${sessionColor}-400 text-white`
     const secondaryAccent = `bg-${sessionSecondary}-400 text-white`
@@ -101,7 +101,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
             if (!chats[otherUserId]) {
                 chats[otherUserId] = [];
             }
-            chats[otherUserId].push(message); // associate the chat with the user "logs"
+            chats[otherUserId].push(message); // associate the chat with the user 'logs'
 
             // we need to keep track of the last message timestamp for each user, so we can sort the user details based on this
             const messageTimestamp = new Date(message.xata?.updatedAt || message.createdAt).getTime();
@@ -163,7 +163,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
 
         */
         
-        if (nMessage.trim() !== "") {
+        if (nMessage.trim() !== '') {
             // then we have a valid message that needs to be sent
             const newSentMessage = {
                 sender_id: sessionUser.userId,
@@ -181,17 +181,17 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
                 [activeChat]: [...(prevChats[activeChat] || []), newSentMessage]
             }));
 
-            setNewMessage(""); // clearing input field
+            setNewMessage(''); // clearing input field
 
             // sending message to database, and then to the server (for live updates)
             try {
                 const response = await trigger(newSentMessage);
                 await socket.emit('sendMessage', newSentMessage); // needs to await, even though it says it doesn't
     
-                //console.log("Message sent, server response:", response);
+                //console.log('Message sent, server response:', response);
             }
             catch (error) {
-                console.error("Failed to send message:", error);
+                console.error('Failed to send message:', error);
                 // Handle failed message sending (e.g., show an error message)
             }
         }
@@ -255,13 +255,13 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
     };
 
     return (
-        <div className="flex h-screen">
+        <div className='flex h-screen'>
             {/* the left panel of the rendered chat component (shows all the active matches + convo details) */}
 
             {/* here, we iterate through all matched users, and display information about them. we also find the last message sent and display that message, and the timestamp on their respective section. we also render the unmatch button here */}
             <div className={`w-2/3 bg-gradient-to-r from-${sessionUser.primary_palette ? sessionUser.primary_palette.toString().toLowerCase() : 'indigo'}-300 to-${sessionUser.secondary_palette ? sessionUser.secondary_palette.toString().toLowerCase() : 'pink'}-400 p-4 overflow-y-auto shadow-lg rounded-lg`}>
 
-                <h1 className="text-2xl font-bold text-white mb-6">Chats</h1>
+                <h1 className='text-2xl font-bold text-white mb-6'>Chats</h1>
 
                 <div>
                     {userDetails.map((user, index) => {
@@ -273,24 +273,24 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
                                 className={`flex items-center mb-4 p-2 rounded-lg cursor-pointer ${activeChat === user.userId ? selectorColor : selectorHover}`}
                                 onClick={() => setActiveChat(user.userId)}>
                                 
-                                <img src={user.imageUrl} alt={user.displayName} className="h-12 w-12 rounded-full mr-3" />
+                                <img src={user.imageUrl} alt={user.displayName} className='h-12 w-12 rounded-full mr-3' />
 
-                                <div className="flex flex-col flex-grow">
-                                    <div className="flex justify-between">
-                                        <p className="flex items-center font-medium text-white">{user.displayName}{user.isVerified === 'true' && <CheckBadgeIcon className="h-4 w-4 text-white ml-1"/>}</p>
+                                <div className='flex flex-col flex-grow'>
+                                    <div className='flex justify-between'>
+                                        <p className='flex items-center font-medium text-white'>{user.displayName}{user.isVerified === 'true' && <CheckBadgeIcon className='h-4 w-4 text-white ml-1'/>}</p>
 
-                                        <p className="text-xs text-white">{lastMessageTime}</p>
+                                        <p className='text-xs text-white'>{lastMessageTime}</p>
                                     </div>
 
                                     {lastMessage && (
-                                        <p className="text-sm text-white">{lastMessage.message}</p>
+                                        <p className='text-sm text-white'>{lastMessage.message}</p>
                                     )}
                                 </div>
 
                                 <button onClick={(e) => {
                                     e.stopPropagation(); // prevents triggering the onClick event
                                     handleUnmatchUser(user);
-                                }} className="p-1 rounded-full hover:bg-gray-100">
+                                }} className='p-1 rounded-full hover:bg-gray-100'>
                                     <XCircleIcon className={`h-6 w-6 text-${sessionColor}-500`} />
                                 </button>
 
@@ -303,14 +303,14 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
             {/* the right panel (chat interface) */}
 
             {/* here, we act when a chat is active - we get their information and display it up top */}
-            <div className="w-2/3 flex flex-col h-5/6 bg-white">
+            <div className='w-2/3 flex flex-col h-5/6 bg-white'>
                 
                 {activeChat !== null && userDetails.find(user => user.userId === activeChat) && (
-                    <div className="p-3 border-b border-gray-300">
+                    <div className='p-3 border-b border-gray-300'>
 
                         {userDetails.find(user => user.userId === activeChat) && (
-                            <div className="flex items-center">
-                                <h2 className="text-lg font-semibold">
+                            <div className='flex items-center'>
+                                <h2 className='text-lg font-semibold'>
                                     {userDetails.find(user => user.userId === activeChat)?.displayName}
                                 </h2>
 
@@ -326,22 +326,22 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
                 {/* the area that displays the sent/received messages */}
 
                 {/* here, we display either a message telling the user to interact with the (selected) match, or it shows all the messages between them - formatted based on user palette settings. on the case where no chat is selected, we have a message that tells the user to select a conversation */}
-                <div className="flex-1 overflow-y-auto p-3 space-y-2" style={{ maxHeight: 'calc(100% - 4rem)' }} ref={messagesEndRef}>
+                <div className='flex-1 overflow-y-auto p-3 space-y-2' style={{ maxHeight: 'calc(100% - 4rem)' }} ref={messagesEndRef}>
 
                     {activeChat && (organizedChats[activeChat] === undefined || organizedChats[activeChat].length === 0) ? (
-                        <div className="text-center pt-52 text-2xl text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>
+                        <div className='text-center pt-52 text-2xl text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300' style={{ userSelect: 'none' }}>
                             Why not introduce yourself to your new match already?
                         </div>
 
                     ) : activeChat ? (
                         organizedChats[activeChat].map((msg, index) => (
-                            <div key={index} className={`flex flex-col ${msg.sender_id === sessionUser.userId ? "items-end" : "items-start"}`}>
+                            <div key={index} className={`flex flex-col ${msg.sender_id === sessionUser.userId ? 'items-end' : 'items-start'}`}>
 
                                 <div className={`max-w-xs md:max-w-md lg:max-w-lg p-2 rounded-lg ${msg.sender_id === sessionUser.userId ? primaryAccent : secondaryAccent}`}>
                                     {msg.message}
                                 </div>
 
-                                <span className="text-xs text-gray-500 mt-1">
+                                <span className='text-xs text-gray-500 mt-1'>
                                     {
                                         msg.xata?.updatedAt
                                             ? new Date(msg.xata.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -352,7 +352,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
                             </div>
                         ))
                     ) : (
-                        <div className="text-center pt-52 text-3xl text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>
+                        <div className='text-center pt-52 text-3xl text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300' style={{ userSelect: 'none' }}>
                             Select a chat to view it here!
                         </div>
                     )}
@@ -362,10 +362,10 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
 
                 {/* here, we have our input bar, and the submit button. once a message is submitted, we call our handleSendMessage function to take care of the rest */}
                 {activeChat !== null && (
-                    <div className="p-3 border-t border-gray-300 flex bg-white">
+                    <div className='p-3 border-t border-gray-300 flex bg-white'>
 
                         <input
-                            type="text"
+                            type='text'
                             value={nMessage}
                             onChange={e => setNewMessage(e.target.value)}
                             onKeyDown={e => {
@@ -374,8 +374,8 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
                                     handleSendMessage();
                                 }
                             }}
-                            className="flex-1 p-2 border border-gray-300 rounded-lg mr-2"
-                            placeholder="Type a message..."
+                            className='flex-1 p-2 border border-gray-300 rounded-lg mr-2'
+                            placeholder='Type a message...'
                         />
 
                         <button

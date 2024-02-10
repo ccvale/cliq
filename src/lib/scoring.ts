@@ -1,5 +1,5 @@
-import { UsersRecord } from "@/xata";
-import calculateAge from "./calculateAge";
+import { UsersRecord } from '@/xata';
+import calculateAge from './calculateAge';
 
 // fix the typing for the users array
 export default function scoringAlgorithm(sessionUser: UsersRecord, users: UsersRecord[]) {
@@ -17,7 +17,7 @@ export default function scoringAlgorithm(sessionUser: UsersRecord, users: UsersR
 
         DESCRIPTION
 
-            This function calculates a very simple/basic relevance score for each user. Deciding factors include age similarity, interest similarity, with extra points to those in the same town, work at the same company, or have the same job position. Most importantly, a big boost to users who have already liked the session user, and they will have a big chance to get to the top of the session users swipe queue. The score is calculated by adding points for each similarity and subtracting points for each difference. This orders the users by "relevance" and allows us to display the most relevant users first.
+            This function calculates a very simple/basic relevance score for each user. Deciding factors include age similarity, interest similarity, with extra points to those in the same town, work at the same company, or have the same job position. Most importantly, a big boost to users who have already liked the session user, and they will have a big chance to get to the top of the session users swipe queue. The score is calculated by adding points for each similarity and subtracting points for each difference. This orders the users by 'relevance' and allows us to display the most relevant users first.
 
             Scoring breakdown as currently implemented:
 
@@ -40,7 +40,7 @@ export default function scoringAlgorithm(sessionUser: UsersRecord, users: UsersR
     */
 
     let userScores: { userId: string; score: number; }[] = [];
-    users.forEach( (user) => {
+    users.forEach((user) => {
         // the things we care about: age similarity (10 points for match, -1 for each age different), interest matching (10 points per match)
         let score = 0;
 

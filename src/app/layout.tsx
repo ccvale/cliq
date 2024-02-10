@@ -51,12 +51,12 @@ export default function RootLayout({
 
   return (
     <ClerkProvider>
-      <html lang="en">
+      <html lang='en'>
         <body className={`flex flex-col min-h-screen overflow-hidden ${font.className}`}>
 
           <Navbar />
 
-          <main className="flex flex-col grow">
+          <main className='flex flex-col grow'>
             {children}
           </main>
 

@@ -1,6 +1,6 @@
-import { getXataClient } from "@/xata";
-import { currentUser } from "@clerk/nextjs";
-import ChatComponent from "../components/ChatComponent";
+import { getXataClient } from '@/xata';
+import { currentUser } from '@clerk/nextjs';
+import ChatComponent from '../components/ChatComponent';
 
 export default async function Chat() {
     /*
@@ -14,7 +14,7 @@ export default async function Chat() {
 
         DESCRIPTION
 
-            This function has many responsibilities. It is responsible for getting the current user, getting the user's matches, getting all messages that the user has sent or received, and then rendering the chat component with all of this data. It also handles the case where the user has no matches, and renders a message to the user telling them that they have no matches and that they should get out there and make some friends. This function is also responsible for "sanitizing" the messages that the user has sent or received, so that the messages can be passed to the chat component without causing errors.
+            This function has many responsibilities. It is responsible for getting the current user, getting the user's matches, getting all messages that the user has sent or received, and then rendering the chat component with all of this data. It also handles the case where the user has no matches, and renders a message to the user telling them that they have no matches and that they should get out there and make some friends. This function is also responsible for 'sanitizing' the messages that the user has sent or received, so that the messages can be passed to the chat component without causing errors.
     */
     
     // getting the xata client and the current user from Clerk
@@ -33,7 +33,7 @@ export default async function Chat() {
         ]
     }).getAll();
 
-    // is being done to avoid errors re: passing non-serializable data to the client - this is apparently called "sanitizing"
+    // is being done to avoid errors re: passing non-serializable data to the client - this is apparently called 'sanitizing'
     const serializedMessages = JSON.stringify(matchMessages);
     const sanitizedMessages = JSON.parse(serializedMessages);
 
@@ -53,12 +53,12 @@ export default async function Chat() {
     if (!sessionUser?.matches || sessionUser.matches.length === 0) {
 
         return (
-            <div className="flex justify-center items-center h-screen" style={{ paddingBottom: '40vh' }}>
+            <div className='flex justify-center items-center h-screen' style={{ paddingBottom: '40vh' }}>
 
-                <div className="text-center">
-                    <h1 className="text-3xl text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>You don&apos;t have any matches...yet!</h1>
+                <div className='text-center'>
+                    <h1 className='text-3xl text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300' style={{ userSelect: 'none' }}>You don&apos;t have any matches...yet!</h1>
 
-                    <h1 className="text-2xl text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>Get out there and make some friends!</h1>
+                    <h1 className='text-2xl text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300' style={{ userSelect: 'none' }}>Get out there and make some friends!</h1>
                 </div>
 
             </div>

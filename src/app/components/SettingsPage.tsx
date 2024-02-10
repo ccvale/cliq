@@ -7,7 +7,7 @@ import updateUser from '../../lib/updateUser';
 import useSWRMutation from 'swr/mutation'
 import { SettingsFormData } from '../../../types';
 //import { useJsApiLoader, Autocomplete } from '@react-google-maps/api';
-import Autocomplete from "react-google-autocomplete";
+import Autocomplete from 'react-google-autocomplete';
 
 /* I tried to use these 'options' in types.d.ts, but it was causing a lot of issues, so I'm just going to leave them here for now */
 
@@ -21,7 +21,7 @@ interface props {
     record: JSONData<UsersRecord>;
 }
 
-const libraries = ["places"];
+const libraries = ['places'];
 
 export default function SettingsPage({ record }: props) {
     /*
@@ -63,15 +63,13 @@ export default function SettingsPage({ record }: props) {
     
 
     // typescript quirk, converting and checking for types in strange ways...used for calculating and setting the user's age from their birthday
-    const userFullBirthday = record?.birthday; // Assuming this is "12-31-1999"
+    const userFullBirthday = record?.birthday; // Assuming this is '12-31-1999'
 
     // Extracting the components of the date
     const userBirthDay = userFullBirthday ? new Date(userFullBirthday).getDate() : 1; // Day of the month
     const userBirthMonth = userFullBirthday ? new Date(userFullBirthday).getMonth() : 1; // Month, adjusted to be 1-based
     const userBirthYear = userFullBirthday ? new Date(userFullBirthday).getFullYear() : 2000; // Year
 
-
-    console.log(userFullBirthday)
 
     // and the states to allow them to be modified
     const [useUserBirthDay, setUserBirthDay] = useState(userBirthDay);
@@ -164,43 +162,42 @@ export default function SettingsPage({ record }: props) {
             </div>
         )}
 
-        <div className="mt-0 mx-auto mb-10 max-w-5xl">
+        <div className='mt-0 mx-auto mb-10 max-w-5xl'>
             <form onSubmit={handleSubmit} className={`mt-0 max-w-5xl max-h-[80vh] overflow-y-auto bg-gradient-to-r from-${record.primary_palette?.toString().toLowerCase()}-500 to-${record.secondary_palette?.toString().toLowerCase()}-300 text-white rounded-xl p-10 flex flex-col justify-start items-center mx-auto mb-10 drop-shadow-lg text-center font-semibold`}>
-                <h1 className="text-4xl mb-4 -mt-5">User Settings <span className="italic text-lg">Let everyone know who you are!</span></h1>
-                <div className="w-full mb-4">
-                    <label className="block text-xl mb-2">Display Name <span className="italic text-sm">- How you want to introduce yourself</span>
-                        <input type="text" value={displayName.toString()} onChange={(e) => setDisplayName(e.target.value)} className="text-sm text-indigo-400 w-full p-2 rounded" />
+                <h1 className='text-4xl mb-4 -mt-5'>User Settings <span className='italic text-lg'>Let everyone know who you are!</span></h1>
+                <div className='w-full mb-4'>
+                    <label className='block text-xl mb-2'>Display Name <span className='italic text-sm'>- How you want to introduce yourself</span>
+                        <input type='text' value={displayName.toString()} onChange={(e) => setDisplayName(e.target.value)} className='text-sm text-indigo-400 w-full p-2 rounded' />
                     </label>
                 </div>
 
-                <div className="w-full mb-4">
-                    <label className="block text-xl mb-2">Bio <span className="italic text-sm">- What do you want others to know about you?</span>
-                        <input type="text" value={bio} onChange={(e) => setBio(e.target.value)} className="text-sm text-indigo-400 w-full p-2 rounded h-20" />
+                <div className='w-full mb-4'>
+                    <label className='block text-xl mb-2'>Bio <span className='italic text-sm'>- What do you want others to know about you?</span>
+                        <input type='text' value={bio} onChange={(e) => setBio(e.target.value)} className='text-sm text-indigo-400 w-full p-2 rounded h-20' />
                     </label>
                 </div>
 
-                <div className="w-full mb-4">
-                    <label className="block text-xl mb-2">Gender <span className="italic text-sm">- How do you identify?</span>
+                <div className='w-full mb-4'>
+                    <label className='block text-xl mb-2'>Gender <span className='italic text-sm'>- How do you identify?</span>
                         
-                        <select value={gender.toString()} onChange={(e) => setGender(e.target.value)} className="text-sm text-indigo-400 w-full p-2 rounded">
+                        <select value={gender.toString()} onChange={(e) => setGender(e.target.value)} className='text-sm text-indigo-400 w-full p-2 rounded'>
 
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
-                            <option value="Other">Other</option>
+                            <option value='Male'>Male</option>
+                            <option value='Female'>Female</option>
+                            <option value='Other'>Other</option>
                         </select>
 
                     </label>
                 </div>
 
-                    <div className="w-full mb-4">
-                        <label className="block text-xl mb-2">Location <span className="italic text-sm">- Where are you checking in from?</span>
+                    <div className='w-full mb-4'>
+                        <label className='block text-xl mb-2'>Location <span className='italic text-sm'>- Where are you checking in from?</span>
                             {(
                                 <Autocomplete
-                                    className="text-sm text-indigo-400 w-full p-2 rounded"
+                                    className='text-sm text-indigo-400 w-full p-2 rounded'
                                     apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
                                     defaultValue={location.toString()}
                                     onPlaceSelected={(place) => {
-                                        console.log(place);
 
                                         const place_components = place?.address_components;
                                         const town = place_components?.find((component) => component.types.includes('locality'))?.long_name ?? '';
@@ -223,54 +220,54 @@ export default function SettingsPage({ record }: props) {
                     </div>
 
 
-                <div className="w-full mb-4">
-                    <label className="block text-xl mb-2">Current Gig <span className="italic text-sm">- (ex. Student at Duke, Data Scientist at Meta)</span>
+                <div className='w-full mb-4'>
+                    <label className='block text-xl mb-2'>Current Gig <span className='italic text-sm'>- (ex. Student at Duke, Data Scientist at Meta)</span>
                         
-                        <div className="flex space-x-2">
-                            <input type="text" defaultValue={jobPosition.toString()} onChange={(e) => setJobPosition(e.target.value)} className="text-sm text-indigo-400 w-1/2 p-2 rounded" />
+                        <div className='flex space-x-2'>
+                            <input type='text' defaultValue={jobPosition.toString()} onChange={(e) => setJobPosition(e.target.value)} className='text-sm text-indigo-400 w-1/2 p-2 rounded' />
                             
-                            <input type="text" defaultValue={jobCompany.toString()} onChange={(e) => setJobCompany(e.target.value)} className="text-sm text-indigo-400 w-1/2 p-2 rounded" />
+                            <input type='text' defaultValue={jobCompany.toString()} onChange={(e) => setJobCompany(e.target.value)} className='text-sm text-indigo-400 w-1/2 p-2 rounded' />
                         </div>
                     </label>
                 </div>
 
-                <div className="w-full mb-4">
+                <div className='w-full mb-4'>
 
-                    <h1 className="text-xl text-white mb-2">Birthday <span className="italic text-sm">- When were you born?</span></h1>
+                    <h1 className='text-xl text-white mb-2'>Birthday <span className='italic text-sm'>- When were you born?</span></h1>
 
-                    <div className="flex space-x-2 justify-center">
-                        <select className="text-sm text-indigo-400 bg-white p-2 rounded" name="birthDay" value={useUserBirthDay} onChange={(e) => setUserBirthDay(Number(e.target.value))}>
+                    <div className='flex space-x-2 justify-center'>
+                        <select className='text-sm text-indigo-400 bg-white p-2 rounded' name='birthDay' value={useUserBirthDay} onChange={(e) => setUserBirthDay(Number(e.target.value))}>
                             {[...Array(31)].map((_, i) => <option key={i} value={i + 1}>{i + 1}</option>)}
                         </select>
 
-                        <select className="text-sm text-indigo-400 bg-white p-2 rounded" name="birthMonth" value={useUserBirthMonth} onChange={(e) => setUserBirthMonth(Number(e.target.value))}>
-                            {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+                        <select className='text-sm text-indigo-400 bg-white p-2 rounded' name='birthMonth' value={useUserBirthMonth} onChange={(e) => setUserBirthMonth(Number(e.target.value))}>
+                            {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
                                 .map((month, index) => <option key={index} value={index + 1}>{month}</option>)}
                         </select>
 
-                        <select className="text-sm text-indigo-400 bg-white p-2 rounded" name="birthYear" value={useUserBirthYear} onChange={(e) => setUserBirthYear(Number(e.target.value))}>
+                        <select className='text-sm text-indigo-400 bg-white p-2 rounded' name='birthYear' value={useUserBirthYear} onChange={(e) => setUserBirthYear(Number(e.target.value))}>
                             {[...Array(new Date().getFullYear() - 1899)].map((_, i) => <option key={i} value={i + 1930}>{i + 1930}</option>)}
                         </select>
                     </div>
                 </div>
 
-                <div className="w-full mb-4">
-                    <label className="block text-xl mb-2">Interests <span className="italic text-sm">- Select your three most passionate interests</span>
+                <div className='w-full mb-4'>
+                    <label className='block text-xl mb-2'>Interests <span className='italic text-sm'>- Select your three most passionate interests</span>
                         
-                        <div className="flex space-x-2">
-                            <select value={primaryInterest.toString()} onChange={(e) => setPrimaryInterest(e.target.value)} className="text-sm text-indigo-400 w-1/2 p-2 rounded">
+                        <div className='flex space-x-2'>
+                            <select value={primaryInterest.toString()} onChange={(e) => setPrimaryInterest(e.target.value)} className='text-sm text-indigo-400 w-1/2 p-2 rounded'>
                                 {interestOptions.filter(interest => interest !== secondaryInterest && interest !== thirdInterest).map((interest, index) => (
                                     <option key={index} value={interest}>{interest}</option>
                                 ))}
                             </select>
 
-                            <select value={secondaryInterest.toString()} onChange={(e) => setSecondaryInterest(e.target.value)} className="text-sm text-indigo-400 w-1/2 p-2 rounded">
+                            <select value={secondaryInterest.toString()} onChange={(e) => setSecondaryInterest(e.target.value)} className='text-sm text-indigo-400 w-1/2 p-2 rounded'>
                                 {interestOptions.filter(interest => interest !== primaryInterest && interest !== thirdInterest).map((interest, index) => (
                                     <option key={index} value={interest}>{interest}</option>
                                 ))}
                             </select>
 
-                            <select value={thirdInterest.toString()} onChange={(e) => setThirdInterest(e.target.value)} className="text-sm text-indigo-400 w-1/2 p-2 rounded">
+                            <select value={thirdInterest.toString()} onChange={(e) => setThirdInterest(e.target.value)} className='text-sm text-indigo-400 w-1/2 p-2 rounded'>
                                 {interestOptions.filter(interest => interest !== primaryInterest && interest !== secondaryInterest).map((interest, index) => (
                                     <option key={index} value={interest}>{interest}</option>
                                 ))}
@@ -279,17 +276,17 @@ export default function SettingsPage({ record }: props) {
                     </label>
                 </div>
 
-                <div className="w-full mb-4">
-                    <label className="block text-xl mb-2">Palette <span className="italic text-sm">- How do you want your profile to look to others?</span>
+                <div className='w-full mb-4'>
+                    <label className='block text-xl mb-2'>Palette <span className='italic text-sm'>- How do you want your profile to look to others?</span>
             
-                        <div className="flex space-x-2">
-                            <select value={primaryPalette.toString()} onChange={(e) => setPrimaryPalette(e.target.value)} className="text-sm text-indigo-400 w-1/2 p-2 rounded">
+                        <div className='flex space-x-2'>
+                            <select value={primaryPalette.toString()} onChange={(e) => setPrimaryPalette(e.target.value)} className='text-sm text-indigo-400 w-1/2 p-2 rounded'>
                                 {paletteOptions.map((color, index) => (
                                     <option key={index} value={color}>{color}</option>
                                 ))}
                             </select>
 
-                            <select value={secondaryPalette.toString()} onChange={(e) => setSecondaryPalette(e.target.value)} className="text-sm text-indigo-400 w-1/2 p-2 rounded">
+                            <select value={secondaryPalette.toString()} onChange={(e) => setSecondaryPalette(e.target.value)} className='text-sm text-indigo-400 w-1/2 p-2 rounded'>
                                 {paletteOptions.map((color, index) => (
                                     <option key={index} value={color}>{color}</option>
                                 ))}
@@ -298,13 +295,13 @@ export default function SettingsPage({ record }: props) {
                     </label>
                 </div>
 
-                <div className="w-full mb-4">
-                    <label className="block text-xl mb-2 text-white">Age Range <span className="italic text-sm">- Select your preferred age range</span>
-                        <div className="flex justify-between items-center">
-                            <span className="mx-2 text-white text-sm">{ageRange.lower}</span>
+                <div className='w-full mb-4'>
+                    <label className='block text-xl mb-2 text-white'>Age Range <span className='italic text-sm'>- Select your preferred age range</span>
+                        <div className='flex justify-between items-center'>
+                            <span className='mx-2 text-white text-sm'>{ageRange.lower}</span>
 
                             <input
-                                type="range"
+                                type='range'
                                 min={userAge >= 18 ? 18 : 13}
                                 max={userAge >= 18 ? ageRange.upper : 17} // Max is 17 if user is under 18
                                 value={ageRange.lower}
@@ -315,11 +312,11 @@ export default function SettingsPage({ record }: props) {
                                         lower: newLowerValue < ageRange.upper ? newLowerValue : ageRange.upper // Ensure lower value is not more than upper value
                                     });
                                 }}
-                                className="text-sm range-slider-thumb w-1/2 p-2 rounded accent-indigo-500"
+                                className='text-sm range-slider-thumb w-1/2 p-2 rounded accent-indigo-500'
                             />
 
                             <input
-                                type="range"
+                                type='range'
                                 min={userAge >= 18 ? 18 : 13}
                                 max={userAge >= 18 ? 100 : 17} // Max is 17 if user is under 18
                                 value={ageRange.upper}
@@ -330,33 +327,33 @@ export default function SettingsPage({ record }: props) {
                                         upper: newUpperValue > ageRange.lower ? newUpperValue : ageRange.lower // Ensure upper value is not less than lower value
                                     });
                                 }}
-                                className="text-sm range-slider-thumb w-1/2 p-2 rounded accent-indigo-500"
+                                className='text-sm range-slider-thumb w-1/2 p-2 rounded accent-indigo-500'
                             />
 
-                            <span className="mx-2 text-white text-sm">{ageRange.upper}</span>
+                            <span className='mx-2 text-white text-sm'>{ageRange.upper}</span>
                         </div>
                     </label>
                 </div>
                     
-                    <div className="w-full mb-4">
-                    <label className="block text-xl mb-2 text-white">Location Range <span className="italic text-sm">- Set your maximum location range in miles</span>
+                    <div className='w-full mb-4'>
+                    <label className='block text-xl mb-2 text-white'>Location Range <span className='italic text-sm'>- Set your maximum location range in miles</span>
                         
-                            <div className="flex justify-between items-center">
+                            <div className='flex justify-between items-center'>
                                 <input
-                                    type="range"
-                                    min="0"
-                                    max="100"
+                                    type='range'
+                                    min='0'
+                                    max='100'
                                     value={locationRange}
                                     onChange={(e) => setLocationRange(parseInt(e.target.value))}
-                                    className="text-sm range-slider-thumb w-full p-2 rounded accent-indigo-500"
+                                    className='text-sm range-slider-thumb w-full p-2 rounded accent-indigo-500'
                             />
                             
-                                <span className="mx-2 text-white text-sm">{locationRange === 100 ? '100+ miles' : `${locationRange} miles`}</span>
+                                <span className='mx-2 text-white text-sm'>{locationRange === 100 ? '100+ miles' : `${locationRange} miles`}</span>
                             </div>
                         </label>
                     </div>
                     
-                <button type="submit" className="text-xl bg-gray-50 text-indigo-400 px-4 py-2 rounded-lg hover:bg-gray-100 -mt-3">
+                <button type='submit' className='text-xl bg-gray-50 text-indigo-400 px-4 py-2 rounded-lg hover:bg-gray-100 -mt-3'>
                     Update Profile
                 </button>
             </form>

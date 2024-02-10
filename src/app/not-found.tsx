@@ -19,11 +19,11 @@ export default function NotFound() {
     // logic: simply render a 404 page if the user accesses a page that doesn't exist
     return (
         <div>
-            <div className="text-center pt-20 text-6xl text-indigo-700 font-semibold" style={{ userSelect: 'none' }}>
+            <div className='text-center pt-20 text-6xl text-indigo-700 font-semibold' style={{ userSelect: 'none' }}>
                 404
             </div>
             
-            <div className="text-center pt-16 text-2xl text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>
+            <div className='text-center pt-16 text-2xl text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300' style={{ userSelect: 'none' }}>
                 This page doesn&apos;t exist...how about you try one that does?
             </div>
             

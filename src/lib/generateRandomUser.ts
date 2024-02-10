@@ -22,13 +22,13 @@ const bios = [
     'I like to play basketball and watch movies',
     'I like to cook and eat',
     'I like to read and write',
-    "The only way to do great work is to love what you do. - Steve Jobs",
-    "Life is what happens when you're busy making other plans. - John Lennon",
-    "Get busy living, or get busy dying. - Stephen King",
-    "The only limit to our realization of tomorrow will be our doubts of today. - Franklin D. Roosevelt",
-    "You miss 100% of the shots you don't take. - Wayne Gretzky",
-    "The greatest glory in living lies not in never falling, but in rising every time we fall. - Nelson Mandela",
-    "Success is not final, failure is not fatal: It is the courage to continue that counts. - Winston Churchill",
+    'The only way to do great work is to love what you do. - Steve Jobs',
+    'Life is what happens when you\'re busy making other plans. - John Lennon',
+    'Get busy living, or get busy dying. - Stephen King',
+    'The only limit to our realization of tomorrow will be our doubts of today. - Franklin D. Roosevelt',
+    'You miss 100% of the shots you don\'t take. - Wayne Gretzky',
+    'The greatest glory in living lies not in never falling, but in rising every time we fall. - Nelson Mandela',
+    'Success is not final, failure is not fatal: It is the courage to continue that counts. - Winston Churchill',
 ];
 
 const locations = ['San Francisco, CA', 'New York, NY', 'Järbo, SE', 'Sandviken, SE', 'Freehold, NJ', 'Waldwick, NJ', 'White Plains, NY', 'Mahwah, NJ', 'Wayne, NJ', 'Portland, ME', 'Dallas, TX', 'Long Island, NY'];
