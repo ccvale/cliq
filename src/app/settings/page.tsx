@@ -34,7 +34,10 @@ export default async function Settings() {
         }
       revalidatePath('/settings');
     } */
+  
+  // (have a better way to do this now, but leaving this here for reference/just in case)
 
+  // we need to serialize the record so that it can be passed to the settings page without causing errors
   const record = fetchedUser ? fetchedUser.toSerializable() : null;
   
   // we will always have a record, because if the user doesn't exist in the xata database, we add them

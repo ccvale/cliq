@@ -43,6 +43,7 @@ export default async function Dashboard() {
   // but if it doesn't exist, we want to create this user
   if (!userPreferences) {
 
+    // even though we have some default values, we want to manually modify some of these values to be more explicit
     let newUser = await xataClient.db.Users.create({
       userId: user?.id,
       location_filter: ['0', '9999999'],
@@ -53,7 +54,8 @@ export default async function Dashboard() {
       location: 'N/A',
     })
 
-    userPreferences = newUser; // we want to set the user preferences to point at the new user
+    // after creation, we want to set the user preferences to point at the new user
+    userPreferences = newUser;
 
   }
 
@@ -114,7 +116,6 @@ export default async function Dashboard() {
           const userData = (await clerkClient.users.getUser(otherUser?.userId));
 
           // goal here is to combine data from xata and clerk, and then push it to the filteredUsers array (we will get type issues here if we don't do this properly, so we will need to create a new object with the combined data, and then push that object to the array)
-          
           const otherUserSerialized = otherUser.toSerializable();
 
           // formatting color theme for later
@@ -129,13 +130,15 @@ export default async function Dashboard() {
     }
   }
 
+  // have to serialize the user preferences to avoid errors re: passing non-serializable data to the client
   userPreferences = userPreferences?.toSerializable();
-  const sessionUserData = (await clerkClient.users.getUser(user?.id));
 
-  if (userPreferences) {
+  if (userPreferences) { // we want to link the user's clerk image to the user's xata data
+    const sessionUserData = (await clerkClient.users.getUser(user?.id));
     userPreferences.image = sessionUserData.imageUrl;
   }
 
+  // and lastly, we want to sort the users by the scoring algorithm and return the swipe queue component
   const sortedUsers = scoringAlgorithm(userPreferences, filteredUsers);
 
   return (

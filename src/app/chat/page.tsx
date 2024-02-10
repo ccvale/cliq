@@ -37,7 +37,7 @@ export default async function Chat() {
     const serializedMessages = JSON.stringify(matchMessages);
     const sanitizedMessages = JSON.parse(serializedMessages);
 
-
+    // array to hold the user details for each match - to be passed to the chat component
     let userDetails: { id: string; userId: string; displayName: string; imageUrl: string; isVerified: string; }[] = [];
 
     // parsing through the matches array (which we formatted in a specific way) to get select user details for each match
