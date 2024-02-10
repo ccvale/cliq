@@ -188,31 +188,7 @@ export default function SettingsPage({ record }: props) {
 
                     <div className="w-full mb-4">
                         <label className="block text-xl mb-2">Location <span className="italic text-sm">- Where are you checking in from?</span>
-                            {(
-                                <Autocomplete
-                                    className="text-sm text-indigo-400 w-full p-2 rounded"
-                                    apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
-                                    defaultValue={location.toString()}
-                                    onPlaceSelected={(place) => {
-                                        console.log(place);
-
-                                        const place_components = place?.address_components;
-                                        const town = place_components?.find((component) => component.types.includes('locality'))?.long_name ?? '';
-                                        const country = place_components?.find((component) => component.types.includes('country'))?.short_name ?? '';
-
-                                        if (country !== 'US' && country !== 'CA') {
-                                            setLocation(`${town}, ${country}`);
-                                        }
-                                        else {
-                                            const state = place_components?.find((component) => component.types.includes('administrative_area_level_1'))?.short_name ?? '';
-                                            setLocation(`${town}, ${state}`);
-                                        }
-                                        //let town = place?.address_components?.[0]?.long_name ?? '';
-                                        //let state = place?.address_components?.[2]?.short_name ?? '';
-                                    }}
-                                >
-                                </Autocomplete>
-                            )}
+                            
                         </label>
                     </div>
 
