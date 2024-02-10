@@ -25,7 +25,7 @@ export default async function getAllUserMessages(userId: string) {
     };
 
     const options = {
-        method: 'GET',
+        method: 'POST',
         headers: {
             Authorization: 'Bearer xau_9RD7mvkOgZ1L4WGnagqll6rBdvOWJim81', // Replace with your actual key
             'Content-Type': 'application/json'
