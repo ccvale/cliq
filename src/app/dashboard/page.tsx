@@ -41,27 +41,7 @@ export default async function Dashboard() {
   let userPreferences = await xataClient.db.Users.filter({ 'userId': user?.id }).getFirst();
   
   // but if it doesn't exist, we want to create this user
-  if (!userPreferences) {
-    let newUser = await xataClient.db.Users.create({
-      userId: user?.id,
-      location_filter: ['0', '9999999'],
-      age_filter: ['18', '100'],
-      gender: 'Other'
-    })
-
-    userPreferences = newUser; // we want to set the user preferences to point at the new user
-  }
-
-  // we want to give our user a message to go to the settings page and set up their profile before they start swiping
-  // new user logic: if the user has not existed previously, we want them to go to the settings page to set up their profile
-  // we want the dashboard to handle this case explicitly, so users will not be able to interact with the swipe queue until they update their profile
-  if (!userPreferences || userPreferences.xata.version < 1) {
-    return (
-      <div className="text-center pt-52 text-2xl text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>
-        Welcome! You should probably go to the <span className="italic">settings page</span> first to set up your profile!
-      </div>
-    )
-  }
+  
   
   // will add users here if they match criteria, and eventually send them to the card component
   const filteredUsers = [];
