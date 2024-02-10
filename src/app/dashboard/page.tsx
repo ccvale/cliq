@@ -42,14 +42,22 @@ export default async function Dashboard() {
   
   // but if it doesn't exist, we want to create this user
   if (!userPreferences) {
+    console.log('first call: user doesnt exist', userPreferences); // we want to see what the user preferences are
+
     let newUser = await xataClient.db.Users.create({
       userId: user?.id,
       location_filter: ['0', '9999999'],
       age_filter: ['18', '100'],
-      gender: 'Other'
+      gender: 'Other',
+      birthday: '2000-01-01T05:00:00.000Z',
+      display_name: 'N/A',
+      location: 'N/A',
     })
+    console.log(newUser.birthday);
 
     userPreferences = newUser; // we want to set the user preferences to point at the new user
+
+    console.log('we have changed the user preferences', userPreferences);
   }
 
   // we want to give our user a message to go to the settings page and set up their profile before they start swiping
@@ -90,10 +98,12 @@ export default async function Dashboard() {
       }
     }).getMany();
 
+
     for (const otherUser of allUsers) {
 
       // we don't want to look at a user if their user id is already in likes or matches - don't even consider them
-      if (userPreferences.likes?.includes(otherUser.userId) || userPreferences.matches?.includes(otherUser.userId)) {
+      // additionally, if the account has never been updated, or has no location, we don't want to consider them
+      if (userPreferences.likes?.includes(otherUser.userId) || userPreferences.matches?.includes(otherUser.userId) || otherUser.xata.version < 1 || otherUser.location === 'N/A' || userPreferences.location === 'N/A') {
         continue;
       }
 
@@ -108,15 +118,15 @@ export default async function Dashboard() {
 
           // goal here is to combine data from xata and clerk, and then push it to the filteredUsers array (we will get type issues here if we don't do this properly, so we will need to create a new object with the combined data, and then push that object to the array)
           
-          const userSerialized = otherUser.toSerializable();
+          const otherUserSerialized = otherUser.toSerializable();
 
           // formatting color theme for later
           const cardTheme = `text-white rounded-xl p-5 w-full md:w-1/4 flex flex-col justify-start items-center gap-2 mx-auto grow mb-20 drop-shadow-3xl text-center font-bold shadow-2xl h-full bg-gradient-to-r from-${otherUser.primary_palette?.toLowerCase()}-500 to-${otherUser.secondary_palette?.toLowerCase()}-300`
 
           // these will be squiggled - we need to create a new object with the combined data, and then push that object to the array
-          userSerialized.image = userData.imageUrl;
-          userSerialized.cardTheme = cardTheme;
-          filteredUsers.push(userSerialized);
+          otherUserSerialized.image = userData.imageUrl;
+          otherUserSerialized.cardTheme = cardTheme;
+          filteredUsers.push(otherUserSerialized);
         }
       }
     }

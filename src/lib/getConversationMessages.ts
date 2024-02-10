@@ -11,7 +11,7 @@ export default async function getConversationMessages(userId1: string, userId2: 
     const options = {
         method: 'POST',
         headers: {
-            Authorization: 'Bearer xau_9RD7mvkOgZ1L4WGnagqll6rBdvOWJim81', // Replace with your actual key
+            Authorization: process.env.NEXT_PUBLIC_XATA_BEARER || '',
             'Content-Type': 'application/json'
         },
         body: JSON.stringify(requestBody)

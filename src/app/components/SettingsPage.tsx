@@ -63,9 +63,15 @@ export default function SettingsPage({ record }: props) {
     
 
     // typescript quirk, converting and checking for types in strange ways...used for calculating and setting the user's age from their birthday
-    const userBirthDay = record?.birthday && typeof record.birthday !== 'object' ? new Date(record.birthday).getDate() : 1;
-    const userBirthMonth = record?.birthday ? new Date(String(record.birthday)).getMonth() : 0;
-    const userBirthYear = record?.birthday && typeof record.birthday !== 'object' ? new Date(record.birthday).getFullYear() : 1900;
+    const userFullBirthday = record?.birthday; // Assuming this is "12-31-1999"
+
+    // Extracting the components of the date
+    const userBirthDay = userFullBirthday ? new Date(userFullBirthday).getDate() : 1; // Day of the month
+    const userBirthMonth = userFullBirthday ? new Date(userFullBirthday).getMonth() : 1; // Month, adjusted to be 1-based
+    const userBirthYear = userFullBirthday ? new Date(userFullBirthday).getFullYear() : 2000; // Year
+
+
+    console.log(userFullBirthday)
 
     // and the states to allow them to be modified
     const [useUserBirthDay, setUserBirthDay] = useState(userBirthDay);
@@ -243,7 +249,7 @@ export default function SettingsPage({ record }: props) {
                         </select>
 
                         <select className="text-sm text-indigo-400 bg-white p-2 rounded" name="birthYear" value={useUserBirthYear} onChange={(e) => setUserBirthYear(Number(e.target.value))}>
-                            {[...Array(new Date().getFullYear() - 1899)].map((_, i) => <option key={i} value={i + 1900}>{i + 1900}</option>)}
+                            {[...Array(new Date().getFullYear() - 1899)].map((_, i) => <option key={i} value={i + 1930}>{i + 1930}</option>)}
                         </select>
                     </div>
                 </div>

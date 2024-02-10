@@ -31,3 +31,7 @@
     background-position: 100% 50%;
   }
 }
+
+.pac-target-input::placeholder {
+  color: #7986cb;
+}

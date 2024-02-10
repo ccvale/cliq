@@ -23,7 +23,7 @@ export default async function addMessage(url: string, data: any) {
     const options = {
         method: 'POST',
         headers: {
-            Authorization: 'Bearer xau_9RD7mvkOgZ1L4WGnagqll6rBdvOWJim81', // typescript again...this is given to us, and will never be undefined but it's not happy
+            Authorization: process.env.NEXT_PUBLIC_XATA_BEARER || '', // typescript again...this is given to us, and will never be undefined but it's not happy
             'Content-Type': 'application/json'
         },
         body: JSON.stringify(data['arg'])
