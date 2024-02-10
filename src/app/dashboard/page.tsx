@@ -49,21 +49,20 @@ export default async function Dashboard() {
       gender: 'Other'
     })
 
-    userPreferences = newUser;
-    console.log(userPreferences.xata.version);
-    // we want to give our user a message to go to the settings page and set up their profile before they start swiping
-
+    userPreferences = newUser; // we want to set the user preferences to point at the new user
   }
 
-  if (!userPreferences || userPreferences.xata.version < 1)
+  // we want to give our user a message to go to the settings page and set up their profile before they start swiping
+  // new user logic: if the user has not existed previously, we want them to go to the settings page to set up their profile
+  // we want the dashboard to handle this case explicitly, so users will not be able to interact with the swipe queue until they update their profile
+  if (!userPreferences || userPreferences.xata.version < 1) {
     return (
       <div className="text-center pt-52 text-2xl text-indigo-700 font-semibold hover:text-indigo-900 transition-colors duration-300" style={{ userSelect: 'none' }}>
         Welcome! You should probably go to the <span className="italic">settings page</span> first to set up your profile!
       </div>
     )
+  }
   
-  // would we want to revalidate path here, or refresh? consider...
-
   // will add users here if they match criteria, and eventually send them to the card component
   const filteredUsers = [];
 
@@ -84,7 +83,7 @@ export default async function Dashboard() {
     const minDistance = Number(userPreferences.location_filter?.[0]) ?? 0; // minimum distance - if not given, set to 0 (set to show all with min distance of 0 miles, essentially all close users will be shown...this is the default behavior if no distance is given)
     const maxDistance = Number(userPreferences.location_filter?.[1]) ?? 9999999; // maximum distance - if not given, set to 9999999 (essentially infinite distance, so all users will be shown)
 
-    // searching for all users that are not the current user, so we can filter them
+    // searching for all users that are not the current user, so we can filter them based on our user's preferences
     const allUsers = await xataClient.db.Users.filter({
       $not: {
         userId: user?.id
@@ -93,7 +92,7 @@ export default async function Dashboard() {
 
     for (const otherUser of allUsers) {
 
-      // we don't want to look at a user if their user id is already in likes or matches
+      // we don't want to look at a user if their user id is already in likes or matches - don't even consider them
       if (userPreferences.likes?.includes(otherUser.userId) || userPreferences.matches?.includes(otherUser.userId)) {
         continue;
       }
@@ -103,6 +102,7 @@ export default async function Dashboard() {
 
       if (ageInRange) { // we don't care about other outcomes - we ignore if we don't have a full match
         const distance = await calculateDistanceBetweenTowns(currentUserLocation, otherUser.location);
+
         if (distance >= minDistance && distance <= maxDistance) { // only if user meets the age criteria, we check the distance criteria
           const userData = (await clerkClient.users.getUser(otherUser?.userId));
 

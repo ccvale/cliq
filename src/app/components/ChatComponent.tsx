@@ -11,6 +11,8 @@ import CheckBadgeIcon from '@heroicons/react/24/solid/CheckBadgeIcon';
 import { UsersRecord } from '@/xata';
 import { MessageMetadata, MinimizedChatData, PopupUser, ExtendedUser } from '../../../types';
 import removeMessages from '@/lib/removeMessages';
+import getConversationMessages from '@/lib/getConversationMessages';
+import getAllUserMessages from '@/lib/getAllUserMessages';
 
 
 type Props = {
@@ -51,6 +53,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
     */
 
     // settings up states
+
     const [activeChat, setActiveChat] = useState(null);
     const [currentChatHistory, setCurrentChatHistory] = useState([]);
     const [nMessage, setNewMessage] = useState("");
@@ -123,11 +126,14 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
     // this is the socket listener that listens for new messages from the server (live updates, basically)
     useEffect(() => {
         socket.on('receiveMessage', (message) => {
-            setCurrentChatHistory(prevHistory => [...prevHistory, message]);
-            setOrganizedChats(prevChats => ({
-                ...prevChats,
-                [message.sender_id]: [...(prevChats[message.sender_id] || []), message]
-            }));
+            // we want to make sure that messages being received are only broadcasted to the user that is receiving them
+            if (message.receiver_id === sessionUser.userId) {
+                setCurrentChatHistory(prevHistory => [...prevHistory, message]);
+                setOrganizedChats(prevChats => ({
+                    ...prevChats,
+                    [message.sender_id]: [...(prevChats[message.sender_id] || []), message]
+                }));
+            }
         });
 
         return () => {
@@ -181,6 +187,7 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
             try {
                 const response = await trigger(newSentMessage);
                 await socket.emit('sendMessage', newSentMessage); // needs to await, even though it says it doesn't
+    
                 //console.log("Message sent, server response:", response);
             }
             catch (error) {
@@ -232,13 +239,13 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
             
 
             // get the messages between the two users
-            const messageIds = matchMessages.filter((message) => {
-                return (message.sender_id === sessionUser.userId && message.receiver_id === user.userId) ||
-                    (message.sender_id === user.userId && message.receiver_id === sessionUser.userId);
-            }).map((message) => message.id);
+            const allMessages = await getConversationMessages(sessionUser.userId, user.userId);
 
+            const messageDb = allMessages['records'];            
+            const messageIds = messageDb.map((message) => message.id);
 
             // as always, these cause squiggly lines, but they are correct
+            
             await unmatchTrigger(messageIds);
             await userTrigger(sessionUpdatedUser);
             await userTrigger(matchUpdatedUser);

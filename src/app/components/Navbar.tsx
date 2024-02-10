@@ -82,7 +82,7 @@ export default function Navbar() {
                     )}
                     {isLoaded && !user && (
                         <Link href="/sign-in">
-                            <button className="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-gradient-to-r hover:from-indigo-600 hover:to-indigo-700">Sign In</button>
+                            <button className="bg-gradient-to-r from-indigo-400 to-indigo-400 text-white px-4 py-2 rounded-lg hover:from-indigo-300 hover:to-indigo-300">Sign In</button>
                         </Link>
                     )}
                 </div>
