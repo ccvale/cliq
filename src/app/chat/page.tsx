@@ -33,7 +33,7 @@ export default async function Chat() {
         ]
     }).getAll();
 
-    // is being done to avoid errors re: passing non-serializable data to the client - this is apparently called 'sanitizing'
+    // is being done to avoid errors re: passing non-serializable data to the client - this is called 'sanitizing'
     const serializedMessages = JSON.stringify(matchMessages);
     const sanitizedMessages = JSON.parse(serializedMessages);
 

@@ -6,8 +6,6 @@ import calculateAge from '@/lib/calculateAge';
 import calculateDistanceBetweenTowns from '@/lib/calculateDistanceBetweenTowns';
 import scoringAlgorithm from '@/lib/scoring';
 
-// we will want to load in the user auth, and the xata client, and filter by users in a near location, then send those users to the card component
-
 export default async function Dashboard() {
 
   /*
@@ -45,13 +43,13 @@ export default async function Dashboard() {
 
     // even though we have some default values, we want to manually modify some of these values to be more explicit
     let newUser = await xataClient.db.Users.create({
-      userId: user?.id,
+      userId: user?.id, // establish a link between the xata and clerk user instances
       location_filter: ['0', '9999999'],
       age_filter: ['18', '100'],
       gender: 'Other',
       birthday: '2000-01-01T05:00:00.000Z',
       display_name: 'N/A',
-      location: 'N/A',
+      location: 'N/A', // allows us to filter out users who haven't set a location - must fill out profile to be shown to others
     })
 
     // after creation, we want to set the user preferences to point at the new user

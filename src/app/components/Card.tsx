@@ -207,7 +207,6 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
                 setLeftSwipes(prev => prev + 1);
             }
         };
-
     };
 
     // bottom of the page 'session stats' calculations
@@ -336,7 +335,6 @@ function UserCard({ user, distanceTag }: { user: ExtendedUser, distanceTag: stri
                         <li key={interest} className='bg-white bg-opacity-40 rounded-full py-1 px-4'>{interest}</li>
                     ))}
                 </ul>
-
             </div>
         </div>
     );

@@ -30,30 +30,29 @@ const socket = io('https://cliq-app-ae230a8c05bd.herokuapp.com/', {
 export default function ChatComponent({ sessionUser, userDetails, matchMessages }: Props) {
 
     /*
-            NAME
+        NAME
 
-                ChatComponent - the component that is responsible for the chat functionality of the application
+            ChatComponent - the component that is responsible for the chat functionality of the application
 
-            SYNOPSIS
+        SYNOPSIS
 
-                ChatComponent({ sessionUser, userDetails, matchMessages })
-                - sessionUser: the user that is currently logged in
-                - userDetails: the details of the users that the current user is matched with
-                - matchMessages: the messages that the current user has with the other users
+            ChatComponent({ sessionUser, userDetails, matchMessages })
+            - sessionUser: the user that is currently logged in
+            - userDetails: the details of the users that the current user is matched with
+            - matchMessages: the messages that the current user has with the other users
 
-            DESCRIPTION
+        DESCRIPTION
 
-                This component is responsible for the chat functionality of the application, and handles all the client-side logic for the chat page.
+            This component is responsible for the chat functionality of the application, and handles all the client-side logic for the chat page.
 
-                Responsibilities of this component include:
-                - Displaying the chat interface
-                - Allowing users to see their matches and chat with them
-                - Sending and receiving messages in real-time
-                - Allowing users to unmatch with other users
+            Responsibilities of this component include:
+            - Displaying the chat interface
+            - Allowing users to see their matches and chat with them
+            - Sending and receiving messages in real-time
+            - Allowing users to unmatch with other users
     */
 
     // settings up states
-
     const [activeChat, setActiveChat] = useState(null);
     const [currentChatHistory, setCurrentChatHistory] = useState([]);
     const [nMessage, setNewMessage] = useState('');
@@ -66,7 +65,6 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
 
     // setting up useRef to let us scroll to the bottom of the chat for each conversation window clicked
     const messagesEndRef = useRef<HTMLDivElement>(null);
-
 
     // initializing and calculating the primary and secondary colors for the user
     const sessionColor = sessionUser.primary_palette?.toString().toLowerCase() ?? 'indigo';
@@ -142,7 +140,6 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
     }, []);
     
 
-
     const handleSendMessage = async () => {
 
         /*
@@ -160,7 +157,6 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
                 - Checks if the message is not empty
                 - If the message is not empty, it sends the message to the server
                 - It also updates the current chat history and organized chats with the new message
-
         */
         
         if (nMessage.trim() !== '') {
@@ -236,16 +232,12 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
             const matchUpdatedUser = { id: user.id, matches: matchUpdatedMatches, likes: matchUpdatedLikes };
 
             // in messages, we need to remove the chat history between the two users in the database
-            
-
-            // get the messages between the two users
+            // we will get the messages between the two users
             const allMessages = await getConversationMessages(sessionUser.userId, user.userId);
-
-            const messageDb = allMessages['records'];            
-            const messageIds = messageDb.map((message) => message.id);
+            const messageDb = allMessages['records'];
+            const messageIds = messageDb.map((message) => message.id); // and we will iterate through each message id and remove them
 
             // as always, these cause squiggly lines, but they are correct
-            
             await unmatchTrigger(messageIds);
             await userTrigger(sessionUpdatedUser);
             await userTrigger(matchUpdatedUser);
