@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-The main concept of **Cliq** (stylistically for Click), was to create a matchmaking web application that serves as an easy way for users to make platonic matches with other users on the platform. Apps such as Tinder and Hinge have proven to be extremely effective, but begs one to ask the question, "If we can use these swipe apps to find quick intimate connections, why not use them to make platonic ones as well?" On Cliq, users are able to create and customize their own profile, and tailor it accordingly to their individual likes and interests. Users will ultimately view a familiarly structured queue of profiles, which belong to other users (within a user specified radius), and can swipe right (to like the profile) or left (to ignore the profile) with the hopes of making matches with users with similar interests. When a match is made, the two users will be allowed to connect and communicate within the app, with direct messaging, where these matches will hopefully cultivate friendships; or in other words, hopefully, they *click*.
+The main concept of **Cliq** (stylistically for Click), was to create a matchmaking web application that serves as an easy way for users to make platonic matches with other users on the platform. Apps such as Tinder and Hinge have proven to be extremely effective, but begs one to ask the question, "If we can use these swipe apps to find quick intimate connections, why not use them to make platonic ones as well?" On Cliq, users are able to create and customize their own profile, and tailor it accordingly to their individual likes and interests. Users will ultimately view a familiarly structured queue of profiles, which belong to other users (within a user specified radius and age range), and can swipe right (to like the profile) or left (to ignore the profile) with the hopes of making matches with users with similar interests. When a match is made, the two users will be allowed to connect and communicate within the app, with direct messaging, where these matches will hopefully cultivate friendships; or in other words, hopefully, they *click*.
 
 ## Default Features for Proof of Concept
 
@@ -60,7 +60,7 @@ In a project of this scale, there are many other features that I would like to i
 
   - Re-addition of `prompts`, which are short questions that users can answer to further customize their profile, and give other users a better idea of who they are (scrapped due to redundancy, and an attempt to clean up the current design of the user card)
 
-  - Ability to add a featured song to a user profile (similar to Tinder’s anthem feature; scrapped due to the idea not being unique enough - could come back with highlighting a TV show, if the right API is found to support this)
+  - Ability to add a featured song to a user profile (similar to Tinder’s anthem feature; scrapped due to the idea not being unique enough - could come back with highlighting a TV show/movie, if the right API is found to support this)
 
   - Using current location to determine distance from other users, rather than using a set 'home location' (would be better suited for a mobile app though)
 
