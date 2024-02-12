@@ -164,7 +164,6 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
                 const likedUserLikes = likedUserData.likes;
                 const likedUserMatches = likedUserData.matches;
 
-                console.log('xata says these are the likes:', sessionUserLikes);
 
                 // update the swipe history
                 setRightSwipes(prev => prev + 1);
@@ -175,13 +174,10 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
                 // we want to add the user id to the sessionUser's liked array, then also check for match...if match, add to matches array
 
                 // updating a like for just the session user - since only the session user is swiping
-                console.log('this should be behind:', sessionUser.likes);
-
                 const sessionUserLike = sessionUserLikes
                     ? [...sessionUserLikes, liked.userId]
                     : [liked.userId];
                 
-                console.log('this is what is being sent:', sessionUserLike);
 
 
                 // updating the session user's data - also modified the format here to fix the aforementioned bug
