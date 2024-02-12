@@ -198,7 +198,8 @@ export default function SettingsPage({ record }: props) {
                                     apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
                                     defaultValue={location.toString()}
                                     onPlaceSelected={(place) => {
-
+                                        
+                                        // logic to parse location from place.address_components and format into a string
                                         const place_components = place?.address_components;
                                         const town = place_components?.find((component) => component.types.includes('locality'))?.long_name ?? '';
                                         const country = place_components?.find((component) => component.types.includes('country'))?.short_name ?? '';
