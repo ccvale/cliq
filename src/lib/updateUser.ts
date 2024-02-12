@@ -34,6 +34,5 @@ export default async function updateUser(url: any, data: any) {
 
     fetch(`https://chris-valente-s-workspace-18lhf4.us-east-1.xata.sh/db/click:main/tables/Users/data/${id}?columns=id`, options)
         .then(response => response.json())
-        .then(response => console.log(response))
         .catch(err => console.error(err));
 }

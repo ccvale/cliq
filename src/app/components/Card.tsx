@@ -164,19 +164,26 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
                 const likedUserLikes = likedUserData.likes;
                 const likedUserMatches = likedUserData.matches;
 
+                console.log('xata says these are the likes:', sessionUserLikes);
+
                 // update the swipe history
                 setRightSwipes(prev => prev + 1);
 
-                
+
                 // if other user has this user in likes already, its a match (both users have liked each other)
-                const isMatch = likedUserLikes?.includes(sessionUser.userId) || false; 
+                const isMatch = likedUserLikes?.includes(sessionUser.userId) || false;
                 // we want to add the user id to the sessionUser's liked array, then also check for match...if match, add to matches array
-                
+
                 // updating a like for just the session user - since only the session user is swiping
-                const sessionUserLike = sessionUser.likes
+                console.log('this should be behind:', sessionUser.likes);
+
+                const sessionUserLike = sessionUserLikes
                     ? [...sessionUserLikes, liked.userId]
                     : [liked.userId];
                 
+                console.log('this is what is being sent:', sessionUserLike);
+
+
                 // updating the session user's data - also modified the format here to fix the aforementioned bug
                 const updatedSessionData = {
                     id: sessionUser.id,
@@ -187,7 +194,7 @@ export default function SwipeQueue({ sessionUser, filteredUsers }: Props) {
                             : [`${liked.id} - ${liked.userId} - ${liked.display_name} - ${liked.image} - ${liked.isVerified}`])
                         : sessionUserMatches
                 };
-                
+
                 // and the other user's data - also modified the format here as well to fix the aforementioned bug
                 const updatedOtherData = {
                     id: liked.id,
