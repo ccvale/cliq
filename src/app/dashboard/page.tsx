@@ -29,7 +29,7 @@ export default async function Dashboard() {
 
               - If they do, we want to find the user preferences, and then filter the other users by the user preferences, so we can display them on the dashboard.
     */
-  console.log('Dashboard page')
+
   const user = await currentUser(); // gets us our clerk user
   //console.log(user);
 
