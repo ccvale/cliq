@@ -29,7 +29,7 @@ export default async function Dashboard() {
 
               - If they do, we want to find the user preferences, and then filter the other users by the user preferences, so we can display them on the dashboard.
     */
-  
+  console.log('Dashboard page')
   const user = await currentUser(); // gets us our clerk user
   //console.log(user);
 
@@ -40,7 +40,6 @@ export default async function Dashboard() {
   
   // but if it doesn't exist, we want to create this user
   if (!userPreferences) {
-
     // even though we have some default values, we want to manually modify some of these values to be more explicit
     try {
       let newUser = await xataClient.db.Users.create({
@@ -55,7 +54,7 @@ export default async function Dashboard() {
       userPreferences = newUser;
     }
     catch (error) {
-      console.log(error);
+      //console.log('duplicate user...this is fine');
       // this would occur if the user already exists in the database
     }
 

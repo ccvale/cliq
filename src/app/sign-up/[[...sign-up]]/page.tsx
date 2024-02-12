@@ -33,6 +33,7 @@ export default function SignUpPage() {
             <div className='flex-none'>
                 
                 <SignUp
+                    afterSignUpUrl={'/dashboard'}
                     appearance={{
                         elements: {
                             formButtonPrimary: 'bg-gradient-to-r from-indigo-400 to-indigo-400 text-white px-4 py-2 rounded-lg hover:from-indigo-300 hover:to-indigo-300',
