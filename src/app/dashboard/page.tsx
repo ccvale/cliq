@@ -55,7 +55,7 @@ export default async function Dashboard() {
       userPreferences = newUser;
     }
     catch (error) {
-      console.log(error);
+      //console.log(error);
     }
 
   }
