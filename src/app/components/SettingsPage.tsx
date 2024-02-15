@@ -26,13 +26,13 @@ export const interestEmojiMap = {
     'Finance': '💰',
     'Food': '🍔',
     'Health': '🏥',
-    'History': '🏛️',
-    'Lifestyle': '🌴',
+    'History': '📜',
+    'Lifestyle': '🏖️',
     'Music': '🎵',
     'News': '📰',
-    'Politics': '🏛️',
+    'Politics': '🗳️',
     'Science': '🔬',
-    'Sports': '🏈',
+    'Sports': '🏀',
     'Technology': '📱',
     'Travel': '✈️',
     'Video Games': '🎮',
@@ -44,6 +44,7 @@ export const interestEmojiMap = {
     'Singing': '🎤',
     'Fishing': '🎣'
 };
+
 
 interface props {
     record: JSONData<UsersRecord>;
