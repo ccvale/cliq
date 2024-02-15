@@ -306,7 +306,7 @@ function UserCard({ user, distanceTag }: { user: ExtendedUser, distanceTag: stri
     // logic here: render out all the information passed through the user object
     // for everything that the user has, fill it out as designed. by this point, cases where these values are null shouldn't exist in the first place, so we can assume that there will always be a value to be filled out
     return (
-        <div className={user.cardTheme} style={{ userSelect: 'none' }}>
+        <div className={`${user.cardTheme}`} style={{ userSelect: 'none' }}>
             {user.image && <Image src={user.image} alt={`${user.display_name}'s profile`} width={500} height={500} className='h-20 w-20 object-cover rounded-full mx-auto block' />}
 
             <h1 className='text-4xl flex items-center justify-center'>
@@ -333,9 +333,11 @@ function UserCard({ user, distanceTag }: { user: ExtendedUser, distanceTag: stri
             <div className='flex-grow'>
                 <h3>Interests</h3>
 
-                <ul className='flex flex-row justify-center items-center gap-5 mx-auto py-2'>
+                <ul className="flex flex-row justify-center items-center gap-5 mx-auto py-2">
                     {[user.primary_interest, user.secondary_interest, user.third_interest]?.map((interest) => (
-                        <li key={interest} className='bg-white bg-opacity-40 rounded-full py-1 px-4'>{interest}</li>
+                        <li key={interest} className="flex items-center bg-white bg-opacity-40 rounded-full py-1 px-4 whitespace-nowrap">
+                            {interest}
+                        </li>
                     ))}
                 </ul>
             </div>

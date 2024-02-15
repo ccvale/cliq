@@ -15,13 +15,12 @@ import Autocomplete from 'react-google-autocomplete';
 export const paletteOptions = ['Slate', 'Orange', 'Gray', 'Yellow', 'Zinc', 'Green', 'Neutral', 'Blue', 'Stone', 'Indigo', 'Red', 'Purple', 'Pink', 'Amber', 'Cyan', 'Violet', 'Lime', 'Rose', 'Teal'];
 
 // would add more of these in a real app, but since this is a project, I'm just going to leave it at this selection
-export const interestOptions = ['Art', 'Business', 'Education', 'Entertainment', 'Fashion', 'Finance', 'Food', 'Health', 'History', 'Lifestyle', 'Music', 'News', 'Politics', 'Science', 'Sports', 'Technology', 'Travel', 'Video Games', 'Yoga', 'Writing', 'Working Out', 'Gardening', 'TV', 'Singing', 'Fishing'];
+export const interestOptions = ['Art', 'Business', 'Education', 'Fashion', 'Finance', 'Food', 'Health', 'History', 'Lifestyle', 'Music', 'News', 'Politics', 'Science', 'Sports', 'Tech', 'Travel', 'Gaming', 'Yoga', 'Writing', 'TV', 'Singing', 'Fishing'];
 
 export const interestEmojiMap = {
     'Art': '🎨',
     'Business': '💼',
     'Education': '📚',
-    'Entertainment': '🎭',
     'Fashion': '👗',
     'Finance': '💰',
     'Food': '🍔',
@@ -33,13 +32,11 @@ export const interestEmojiMap = {
     'Politics': '🗳️',
     'Science': '🔬',
     'Sports': '🏀',
-    'Technology': '📱',
+    'Tech': '📱',
     'Travel': '✈️',
-    'Video Games': '🎮',
+    'Gaming': '🎮',
     'Yoga': '🧘',
     'Writing': '📝',
-    'Working Out': '🏋️',
-    'Gardening': '🌱',
     'TV': '📺',
     'Singing': '🎤',
     'Fishing': '🎣'
