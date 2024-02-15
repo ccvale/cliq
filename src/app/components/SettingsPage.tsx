@@ -17,6 +17,34 @@ export const paletteOptions = ['Slate', 'Orange', 'Gray', 'Yellow', 'Zinc', 'Gre
 // would add more of these in a real app, but since this is a project, I'm just going to leave it at this selection
 export const interestOptions = ['Art', 'Business', 'Education', 'Entertainment', 'Fashion', 'Finance', 'Food', 'Health', 'History', 'Lifestyle', 'Music', 'News', 'Politics', 'Science', 'Sports', 'Technology', 'Travel', 'Video Games', 'Yoga', 'Writing', 'Working Out', 'Gardening', 'TV', 'Singing', 'Fishing'];
 
+export const interestEmojiMap = {
+    'Art': '🎨',
+    'Business': '💼',
+    'Education': '📚',
+    'Entertainment': '🎭',
+    'Fashion': '👗',
+    'Finance': '💰',
+    'Food': '🍔',
+    'Health': '🏥',
+    'History': '🏛️',
+    'Lifestyle': '🌴',
+    'Music': '🎵',
+    'News': '📰',
+    'Politics': '🏛️',
+    'Science': '🔬',
+    'Sports': '🏈',
+    'Technology': '📱',
+    'Travel': '✈️',
+    'Video Games': '🎮',
+    'Yoga': '🧘',
+    'Writing': '📝',
+    'Working Out': '🏋️',
+    'Gardening': '🌱',
+    'TV': '📺',
+    'Singing': '🎤',
+    'Fishing': '🎣'
+};
+
 interface props {
     record: JSONData<UsersRecord>;
 }
@@ -258,19 +286,19 @@ export default function SettingsPage({ record }: props) {
                         <div className='flex space-x-2'>
                             <select value={primaryInterest.toString()} onChange={(e) => setPrimaryInterest(e.target.value)} className='text-sm text-indigo-400 w-1/2 p-2 rounded'>
                                 {interestOptions.filter(interest => interest !== secondaryInterest && interest !== thirdInterest).map((interest, index) => (
-                                    <option key={index} value={interest}>{interest}</option>
+                                    <option key={index} value={`${interestEmojiMap[interest as keyof typeof interestEmojiMap]} ${interest}`}>{interest}</option>
                                 ))}
                             </select>
 
                             <select value={secondaryInterest.toString()} onChange={(e) => setSecondaryInterest(e.target.value)} className='text-sm text-indigo-400 w-1/2 p-2 rounded'>
                                 {interestOptions.filter(interest => interest !== primaryInterest && interest !== thirdInterest).map((interest, index) => (
-                                    <option key={index} value={interest}>{interest}</option>
+                                    <option key={index} value={`${interestEmojiMap[interest as keyof typeof interestEmojiMap]} ${interest}`}>{interest}</option>
                                 ))}
                             </select>
 
                             <select value={thirdInterest.toString()} onChange={(e) => setThirdInterest(e.target.value)} className='text-sm text-indigo-400 w-1/2 p-2 rounded'>
                                 {interestOptions.filter(interest => interest !== primaryInterest && interest !== secondaryInterest).map((interest, index) => (
-                                    <option key={index} value={interest}>{interest}</option>
+                                    <option key={index} value={`${interestEmojiMap[interest as keyof typeof interestEmojiMap]} ${interest}`}>{interest}</option>
                                 ))}
                             </select>
                         </div>
