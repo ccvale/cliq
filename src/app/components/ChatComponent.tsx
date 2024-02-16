@@ -5,14 +5,15 @@ import useSWRMutation from 'swr/mutation';
 import newMessage from '@/lib/newMessage';
 import updateUser from '@/lib/updateUser';
 import getUser from '@/lib/getUser';
-import { XCircleIcon } from '@heroicons/react/24/outline';
 import io from 'socket.io-client';
 import CheckBadgeIcon from '@heroicons/react/24/solid/CheckBadgeIcon';
+import { FaceSmileIcon, GifIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import { UsersRecord } from '@/xata';
-import { MessageMetadata, MinimizedChatData, PopupUser, ExtendedUser } from '../../../types';
+import { MessageMetadata, MinimizedChatData, PopupUser } from '../../../types';
 import removeMessages from '@/lib/removeMessages';
 import getConversationMessages from '@/lib/getConversationMessages';
-import getAllUserMessages from '@/lib/getAllUserMessages';
+import data from '@emoji-mart/data'
+import Picker from '@emoji-mart/react'
 
 
 type Props = {
@@ -59,6 +60,18 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
     const [organizedChats, setOrganizedChats] = useState({});
     const [nUserDetails, setUserDetails] = useState(userDetails);
 
+    const [emojiLoad, setEmojiLoad] = useState(false);
+
+        const emojiLoader = () => {
+        setEmojiLoad(!emojiLoad);
+    }
+
+    const [gifLoad, setGifLoad] = useState(false);
+
+        const gifLoader = () => {
+        setGifLoad(!gifLoad);
+    }
+
     const { trigger } = useSWRMutation('/api/newMessage', newMessage);
     const { trigger: userTrigger } = useSWRMutation('/api/updateUser', updateUser);
     const {trigger: unmatchTrigger} = useSWRMutation('/api/removeMessages', removeMessages);
@@ -81,6 +94,11 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
         if (messagesEndRef.current) {
             messagesEndRef.current.scrollTop = messagesEndRef.current.scrollHeight;
         }
+    };
+
+    const handleEmojiClick = (emoji) => {
+        // Append the clicked emoji to the current message in the input box
+        setNewMessage((prevMessage) => prevMessage + emoji.native);
     };
 
     // we want to then utilize the scrollToBottom function to scroll to the bottom of the chat window for each conversation window clicked
@@ -369,6 +387,40 @@ export default function ChatComponent({ sessionUser, userDetails, matchMessages 
                             className='flex-1 p-2 border border-gray-300 rounded-lg mr-2'
                             placeholder='Type a message...'
                         />
+
+                        
+                        <button onClick={emojiLoader} className='flex-shrink-0'>
+                                <div>
+                                    <FaceSmileIcon className='w-10 h-10'/>
+                                </div>
+                        </button>
+
+                        {
+                            emojiLoad && (
+                                <div className='absolute bottom-0 right-0 mb-28 mr-4'>
+                                    <Picker set='apple' autoFocus='false' onEmojiSelect={handleEmojiClick} theme='light'/>
+                                </div>
+                            )
+                        }
+
+                        {/*
+
+                            <button onClick={gifLoader} className='flex-shrink-0'>
+                                    <div>
+                                        <GifIcon className='w-10 h-10'/>
+                                    </div>
+                            </button>
+
+                            {
+                                gifLoad && (
+                                    <div className='absolute bottom-0 right-0 mb-28 mr-4'>
+                                    </div>
+                                )
+                            }
+
+                        */}
+
+                        
 
                         <button
                             onClick={handleSendMessage}

@@ -4,6 +4,10 @@ Now that the formal project is over, I can begin to develop this at my own pace.
 
 ## Next Steps
 
+- Emoji picker in chat ✅
+
+- GIF keyboard in chat
+
 - Automatic message sorting on message send (obvious one, but was always low priority)
 
 - Cleaning up all of the user calls - find the best time to make calls instead of making calls on random data
