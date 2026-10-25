@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { Txt } from '@/components/Txt';
 import { Wordmark } from '@/components/Wordmark';
+import { LogoMark } from '@/components/LogoMark';
 import { AppleSignIn } from '@/components/AppleSignIn';
 import { GoogleSignIn, googleConfigured } from '@/components/GoogleSignIn';
 import { PALETTE } from '@/lib/catalog';
@@ -21,10 +22,11 @@ export default function Welcome() {
       <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg, opacity: scheme === 'dark' ? 0.55 : 0.35 }]} />
       <Screen edges={['top', 'bottom']} style={{ backgroundColor: 'transparent' }} maxWidth={460}>
         <Animated.View entering={FadeIn.duration(600)} style={{ paddingTop: 24 }}>
-          <Wordmark size={34} />
+          <Wordmark size={34} mark={false} />
         </Animated.View>
 
         <View style={{ flex: 1, justifyContent: 'center', gap: 18 }}>
+          <LogoMark size={132} animate="enter" style={{ marginBottom: 12, marginLeft: -6 }} />
           <Animated.View entering={FadeInDown.delay(150).duration(700)}>
             <Txt variant="eyebrow" tone="soft">
               Friends, not dates

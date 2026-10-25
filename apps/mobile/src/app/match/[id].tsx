@@ -16,6 +16,7 @@ import Animated, {
 import * as Haptics from 'expo-haptics';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
+import { LogoMark } from '@/components/LogoMark';
 import { Txt } from '@/components/Txt';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -63,6 +64,7 @@ export default function MatchMoment() {
         </View>
 
         <Animated.View entering={FadeInDown.delay(250).duration(600)} style={{ gap: 10, alignItems: 'center', marginTop: 40 }}>
+          <LogoMark size={72} animate="enter" style={{ marginBottom: 6 }} />
           <Txt variant="eyebrow" tone="accent">
             It’s mutual
           </Txt>

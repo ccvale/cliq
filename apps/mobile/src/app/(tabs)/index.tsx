@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
+import { Pressable, StyleSheet, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { SlidersHorizontal, Sparkles, X } from 'lucide-react-native';
@@ -11,6 +11,7 @@ import { SwipeDeck, type DeckHandle } from '@/components/SwipeDeck';
 import { Txt } from '@/components/Txt';
 import { Wordmark } from '@/components/Wordmark';
 import { VerifyBanner } from '@/components/VerifyBanner';
+import { LogoMark } from '@/components/LogoMark';
 import { api } from '@/lib/api';
 import type { Card } from '@/lib/types';
 import { useSession } from '@/state/session';
@@ -90,7 +91,9 @@ export default function Discover() {
       <VerifyBanner />
       <View style={{ flex: 1, alignItems: 'center', paddingBottom: tabBarSpace }} onLayout={onLayout}>
         {cards === null ? (
-          <ActivityIndicator style={{ flex: 1 }} color={accent.solid} />
+          <View style={{ flex: 1, justifyContent: 'center' }}>
+            <LogoMark size={96} animate="loop" />
+          </View>
         ) : remaining <= 0 ? (
           <EmptyState
             art={
