@@ -42,6 +42,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.3.0",
+    "cross-env": "^7.0.3",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -51,7 +52,8 @@
     "web": "expo start --web",
     "export:web": "expo export --platform web",
     "typecheck": "tsc --noEmit",
-    "export:demo": "EXPO_PUBLIC_DEMO=1 expo export --platform web --output-dir dist-demo"
+    "export:demo": "cross-env EXPO_PUBLIC_DEMO=1 expo export --platform web --output-dir dist-demo",
+    "demo": "cross-env EXPO_PUBLIC_DEMO=1 expo start"
   },
   "private": true
 }

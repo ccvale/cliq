@@ -1,3 +1,4 @@
+import { pathToFileURL } from 'node:url';
 /**
  * Fills a local database with a demo account and people nearby, so the app has something to show.
  *   npm run seed                        # around Mahwah, NJ
@@ -95,7 +96,8 @@ export async function seed(db: Db, center = { lat: 41.09, lng: -74.15 }) {
   return demo;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Compare as URLs so this also matches on Windows (file:///C:/...).
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const db = await openDb({ url: config.databaseUrl, dataDir: config.dataDir });
   const center = { lat: Number(process.env.SEED_LAT ?? 41.09), lng: Number(process.env.SEED_LNG ?? -74.15) };
   await seed(db, center);

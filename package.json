@@ -1,0 +1,14 @@
+{
+  "name": "cliq",
+  "private": true,
+  "description": "Cliq 2.0: Expo app and API. Run `npm install` once, then `npm start`.",
+  "scripts": {
+    "postinstall": "npm --prefix apps/server install && npm --prefix apps/mobile install",
+    "start": "concurrently --kill-others --names api,app --prefix-colors magenta,cyan \"npm --prefix apps/server run dev\" \"npm --prefix apps/mobile start\"",
+    "demo": "npm --prefix apps/mobile run demo",
+    "test": "npm --prefix apps/server test && npm --prefix apps/mobile run typecheck"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}

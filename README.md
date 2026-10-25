@@ -49,22 +49,16 @@ docs/       Senior project report, test plan, redesign screenshots
 
 ## Getting started
 
-You need Node 20+.
+You need Node 20+. From the project folder:
 
 ```bash
-# 1. API (terminal 1)
-cd apps/server
-npm install
-npm run seed      # demo account + a dozen people around Mahwah, NJ
-npm run dev       # http://localhost:4000
-
-# 2. App (terminal 2)
-cd apps/mobile
-npm install
-npx expo start    # press w for web, or scan the QR code with a development build
+npm install   # installs the API and the app
+npm start     # starts both; scan the QR code with Expo Go, or press w for web
 ```
 
-Sign in with **demo@cliq.app / cliq-demo-2024**. When you sign up a new account, the verification code is printed in the API's terminal (set `SMTP_URL` to send real email). Maya, Jordan, Theo, Riley and Diego have already liked the demo account, so swiping right on them makes a match. Use `SEED_LAT` / `SEED_LNG` to seed around your own location.
+Sign in with **demo@cliq.app / cliq-demo-2024**. The first run fills the local database with a dozen people around Mahwah, NJ, and Maya, Jordan, Theo, Riley and Diego have already liked the demo account, so swiping right on them makes a match. When you sign up a new account, the email code is printed in the terminal (set `SMTP_URL` to send real email).
+
+Two processes run side by side: the **app** (Expo, which hands the code to your phone) and the **API** (the backend with the database, sign in, matching and chat). `npm run demo` starts only the app with built-in sample data instead of the API (every email code is 246810), handy for a quick look.
 
 On a phone, the app talks to the API on the same machine that runs Metro. Set `EXPO_PUBLIC_API_URL` to point it somewhere else.
 
