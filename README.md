@@ -1,73 +1,95 @@
-# Cliq - making friends has never been easier
+# Cliq — making friends has never been easier
 
-## Project Overview
+Cliq is a swipe app for **platonic** connections. You build a card that shows who you are (no photo contest, just your interests, your day-to-day and a two-color palette), swipe through people nearby, and when you both say yes, you *click* and can start talking.
 
-The main concept of **Cliq** (stylistically for Click), was to create a matchmaking web application that serves as an easy way for users to make platonic matches with other users on the platform. Apps such as Tinder and Hinge have proven to be extremely effective, but begs one to ask the question, "If we can use these swipe apps to find quick intimate connections, why not use them to make platonic ones as well?" On Cliq, users are able to create and customize their own profile, and tailor it accordingly to their individual likes and interests. Users will ultimately view a familiarly structured queue of profiles, which belong to other users (within a user specified radius and age range), and can swipe right (to like the profile) or left (to ignore the profile) with the hopes of making matches with users with similar interests. When a match is made, the two users will be allowed to connect and communicate within the app, with direct messaging, where these matches will hopefully cultivate friendships; or in other words, hopefully, they *click*.
+This is Cliq 2.0: a ground-up redesign of the [2024 senior project](docs/Cliq%20Senior%20Project%20Report.pdf) as a native app for iOS and Android plus a web version, all from one codebase. The original Next.js app is kept in [`legacy/`](legacy) for reference.
 
-## Default Features for Proof of Concept
+<p>
+  <img src="docs/redesign/welcome.jpg" width="200" />
+  <img src="docs/redesign/discover.jpg" width="200" />
+  <img src="docs/redesign/match.jpg" width="200" />
+  <img src="docs/redesign/chat.jpg" width="200" />
+</p>
 
-This project is ambitious, and has a lot of additional exciting features that have realized themselves throughout production. These features cannot all be included, (there are lots that had to be cut, or put to the side for a time where I don't have a deadline) but those features that are integral to Cliq’s primary functionality would be as follows:
+## What's inside
 
-- **Complete user profile customization**
+```
+apps/
+  mobile/   Expo (SDK 58) app for iOS, Android and web — Expo Router, Reanimated, Gesture Handler
+  server/   Cliq API — Hono on Node, Postgres, WebSockets, our own auth
+legacy/     The original Next.js + Xata + Clerk app
+docs/       Senior project report, test plan, redesign screenshots
+```
 
-  - Users present to others with a unique `card`, which contains user information such as: biography, age, location, school/profession, etc. ✅
+### The app
 
-  - Highlightable interests ✅
+- **Onboarding** in seven short steps that save as you go: name, birthday, gig, interests, palette (with a live card preview), bio, location.
+- **Discover**: a physics-based swipe deck with haptics, "Let's hang" / "Not now" stamps, tap buttons for people who'd rather not drag, and the original session stats.
+- **It's mutual**: a match moment where both palettes meet, then straight into chat.
+- **Friends and chat**: realtime messages over WebSockets, typing indicator, read receipts, grouped bubbles tinted with your palette, unmatch, and report-and-block.
+- **Your palette themes everything**, just like the original: buttons, accents, sliders and chat bubbles all follow the two colors you pick.
+- **Native touches**: Face ID / fingerprint app lock, Keychain/Keystore token storage, Sign in with Apple, push notifications for matches and messages, on-device reverse geocoding, light and dark mode.
+- **Web**: the same screens with a sidebar layout on wide windows; mouse drag and keyboard (Enter to send) work.
 
-  - Ability to upload a profile picture, and display it on their profile (differs to dating apps, where multiple photos are required, and are the focal point of the profile) ✅
+### The API (no third-party auth or database service)
 
-  - A custom `palette`, which consists of two selectable colors that will blend together to theme each user card ✅
+| Concern | How it's done |
+| --- | --- |
+| Passwords | scrypt (N=2^15) with per-user salt, constant-time compare, dummy hash for unknown emails |
+| Sessions | 15-minute HS256 access tokens plus single-use 30-day refresh tokens stored as SHA-256 hashes. Reusing a rotated refresh token revokes the whole session family |
+| Social sign-in | Apple and Google identity tokens verified against the providers' public keys |
+| Abuse | Per-IP rate limiting on auth routes, report-and-block, teens (13–17) and adults never see each other |
+| Location | Coarsened to ~1km before storage; others only ever see whole miles. No geocoding API needed |
+| Discovery | Bounding box in SQL, exact distance and mutual age/radius preferences in code, ranked by an evolved version of the original scoring algorithm |
+| Realtime | WebSocket hub with first-message auth, Expo push fallback when the other person is offline |
+| Database | Plain SQL migrations. Runs on any Postgres via `DATABASE_URL`, or embedded PGlite with zero setup |
 
-    - This palette will also be used to theme the rest of the application, to give the user a sense of ownership over their user experience ✅
+## Getting started
 
-- **Chat features**
+You need Node 20+.
 
-  - Users will be able to chat with matches if and only if a formal match has occurred ✅
+```bash
+# 1. API (terminal 1)
+cd apps/server
+npm install
+npm run seed      # demo account + a dozen people around Mahwah, NJ
+npm run dev       # http://localhost:4000
 
-  - Users will have the ability to unmatch (and report, if this project ever scales) their matches if they feel they have crossed a line, or said something explicit/inappropriate, instantly blocking them from further communication ✅
+# 2. App (terminal 2)
+cd apps/mobile
+npm install
+npx expo start    # press w for web, or scan the QR code with a development build
+```
 
-- **Swiping - the core functionality**
+Sign in with **demo@cliq.app / cliq-demo-2024**. Maya, Jordan, Theo, Riley and Diego have already liked the demo account, so swiping right on them makes a match. Use `SEED_LAT` / `SEED_LNG` to seed around your own location.
 
-  - Each profile will be represented in the style of a card; this card will have all information from the users profile that they are sharing, and will be visible to other users ✅
+On a phone, the app talks to the API on the same machine that runs Metro. Set `EXPO_PUBLIC_API_URL` to point it somewhere else.
 
-  - These cards will exist in a “swipe queue”, where they will show up one at a time, where the user can observe and interact with the card and determine whether or not this user is a potential friend they would like to have ✅
+### Native builds
 
-  - Users that have swiped right on a given user will move up in that users swipe queue to ensure that they are seen quicker (given priority) with the goal of making quicker matches ✅
+Sign in with Apple, Face ID, and push notifications need a development build rather than Expo Go:
 
-  - Users that match other aspects of the session users profile will also get a boost in swipe queue placement (ex. several matching interests) ✅
+```bash
+cd apps/mobile
+npx eas-cli@latest build --profile development --platform ios
+```
 
-  - Users can swipe right (to like), or swipe left (to discard) on these cards as they wish ✅
+Push notifications also need an EAS project id (`npx eas-cli init`). Set `APPLE_AUDIENCES` on the server to your bundle id (`fi.cliq.app`).
 
-  - If both users have swiped right on each other, a match has occurred; both users will be notified, and they can now chat with each other ✅
+### Tests
 
-- **Setting additional filters**
+```bash
+cd apps/server && npm test        # auth, token rotation, discovery rules, matching, chat
+cd apps/mobile && npx tsc --noEmit
+```
 
-  - Users will be able to filter the users they can see in their swipe queue based on certain criteria, to allow for a better scope of what they are looking for ✅
+## Configuration
 
-    - Age (18+ users will not be able to set their lower age bound filter lower than 18, and vice-versa) ✅
+See [`apps/server/.env.example`](apps/server/.env.example). In production, `JWT_SECRET` must be a random string of at least 32 characters and `DATABASE_URL` should point at a managed Postgres.
 
-    - Distance (maximum distance is filterable in regards to miles away) ✅
+## What's next
 
-- **Authenticating with third party services**
-
-  - Alongside creating an account with a username + password, users can authenticate themselves with popular platforms such as Google, Discord, Twitch, and Tiktok ✅
-
-## Future Features
-
-In a project of this scale, there are many other features that I would like to implement, but due to time constraints, I was unable to do so. Those features include:
-
-- **Further profile customization**
-
-  - Re-addition of `prompts`, which are short questions that users can answer to further customize their profile, and give other users a better idea of who they are (scrapped due to redundancy, and an attempt to clean up the current design of the user card)
-
-  - Ability to add a featured song to a user profile (similar to Tinder’s anthem feature; scrapped due to the idea not being unique enough - could come back with highlighting a TV show/movie, if the right API is found to support this)
-
-  - Using current location to determine distance from other users, rather than using a set 'home location' (would be better suited for a mobile app though)
-
-  - `Achievements` - a way for users to show off their accomplishments on the platform, such as "First Match", "First Message", "First Block", etc. Could be a fun way to gamify the platform, and encourage users to use the app more, and would be implemented with a `badge` system, where users can display their achievements on their profile
-
-- **Additional chat features**
-
-  - Ability to send other types of media (images, gifs, etc.)
-
-  - Display an indicator when a user is typing, has read a message, or is currently online
+- Email verification and password reset (needs an email sender)
+- Optional profile photo upload
+- Google sign-in button on the client (the server side is ready)
+- Deploying the API (any Node host with Postgres) and the web build (`npm run export:web`, then any static host)
