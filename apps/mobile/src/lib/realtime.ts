@@ -1,4 +1,5 @@
-import { API_URL, session } from './api';
+import { API_URL, DEMO, session } from './api';
+import { onDemoEvent } from './demo';
 import type { ServerEvent } from './types';
 
 type Listener = (event: ServerEvent) => void;
@@ -13,6 +14,10 @@ class Realtime {
   private wanted = false;
 
   start() {
+    if (DEMO) {
+      onDemoEvent((event) => this.listeners.forEach((fn) => fn(event)));
+      return;
+    }
     this.wanted = true;
     if (!this.ws) this.connect();
   }

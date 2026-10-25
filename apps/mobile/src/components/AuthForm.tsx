@@ -3,7 +3,7 @@ import { Pressable, View, type TextInputInstance } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react-native';
-import { api } from '@/lib/api';
+import { api, DEMO } from '@/lib/api';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/ThemeProvider';
 import { Button } from './Button';
@@ -15,8 +15,9 @@ import { Txt } from './Txt';
 export function AuthForm({ mode }: { mode: 'signUp' | 'signIn' }) {
   const { completeSignIn } = useSession();
   const { colors } = useTheme();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const signUpMode = mode === 'signUp';
+  const [email, setEmail] = useState(DEMO && !signUpMode ? 'demo@cliq.app' : '');
+  const [password, setPassword] = useState(DEMO && !signUpMode ? 'cliq-demo-2024' : '');
   const [reveal, setReveal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -46,6 +47,13 @@ export function AuthForm({ mode }: { mode: 'signUp' | 'signIn' }) {
         <Txt tone="muted">
           {signUp ? 'It takes a minute. Your profile comes next.' : 'Your friends missed you.'}
         </Txt>
+        {DEMO ? (
+          <Txt variant="caption" tone="accent" style={{ marginTop: 4 }}>
+            {signUp
+              ? 'Demo: any email works. You’ll go through onboarding with a fresh profile.'
+              : 'Demo: sign in to a ready-made profile with friends and chats.'}
+          </Txt>
+        ) : null}
       </Animated.View>
       <Animated.View entering={FadeInDown.delay(100).duration(500)} style={{ gap: 18 }}>
         <Field

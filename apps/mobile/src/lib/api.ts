@@ -1,6 +1,7 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { secureStorage } from './storage';
+import { demoApi } from './demo';
 import type { Card, MatchSummary, Me, Message, Profile, ProfilePatch } from './types';
 
 /** In development the API runs on the same machine as Metro, so reuse the host the device already reaches. */
@@ -12,6 +13,8 @@ function resolveBaseUrl() {
   return `http://${host}:4000`;
 }
 
+/** Demo builds run entirely in the browser against seeded data (see demo.ts). */
+export const DEMO = process.env.EXPO_PUBLIC_DEMO === '1';
 export const API_URL = resolveBaseUrl();
 const REFRESH_KEY = 'cliq.refresh';
 
@@ -28,6 +31,7 @@ let onSignedOut: (() => void) | null = null;
 
 export const session = {
   async restore() {
+    if (DEMO) return false;
     return (await secureStorage.get(REFRESH_KEY)) ? refresh() : false;
   },
   async save(tokens: Tokens) {
@@ -97,7 +101,7 @@ async function request<T>(method: string, path: string, body?: unknown, retry = 
   return (res.status === 204 ? undefined : await res.json()) as T;
 }
 
-export const api = {
+const realApi = {
   signUp: (email: string, password: string) => request<Tokens>('POST', '/auth/signup', { email, password }),
   signIn: (email: string, password: string) => request<Tokens>('POST', '/auth/signin', { email, password }),
   signInWithApple: (identityToken: string, givenName?: string) =>
@@ -124,3 +128,5 @@ export const api = {
   unmatch: (matchId: string) => request<void>('DELETE', `/matches/${matchId}`),
   report: (targetId: string, reason: string) => request<void>('POST', '/reports', { targetId, reason }),
 };
+
+export const api: typeof realApi = DEMO ? (demoApi as unknown as typeof realApi) : realApi;
