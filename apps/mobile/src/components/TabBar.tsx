@@ -83,7 +83,7 @@ export function TabBar({ state, descriptors, emitter, navigateToTab, wide }: Bot
         <View style={{ flex: 1 }} />
         {me ? (
           <View style={styles.sideFooter}>
-            <Avatar name={me.profile.displayName} palette={me.profile.palette} size={36} />
+            <Avatar name={me.profile.displayName} palette={me.profile.palette} photo={me.profile.photoUrl} size={36} />
             <View style={{ flex: 1 }}>
               <Txt variant="label" numberOfLines={1}>
                 {me.profile.displayName}

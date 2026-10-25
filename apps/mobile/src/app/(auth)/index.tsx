@@ -8,6 +8,7 @@ import { Screen } from '@/components/Screen';
 import { Txt } from '@/components/Txt';
 import { Wordmark } from '@/components/Wordmark';
 import { AppleSignIn } from '@/components/AppleSignIn';
+import { GoogleSignIn, googleConfigured } from '@/components/GoogleSignIn';
 import { PALETTE } from '@/lib/catalog';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -46,6 +47,7 @@ export default function Welcome() {
 
         <Animated.View entering={FadeInDown.delay(520).duration(700)} style={{ gap: 12, paddingBottom: 16 }}>
           {Platform.OS === 'ios' ? <AppleSignIn /> : null}
+          {googleConfigured ? <GoogleSignIn /> : null}
           <Button
             label="Get started with email"
             icon={<Mail size={18} color={colors.bg} />}

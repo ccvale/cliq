@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { openDb, type Db } from '../src/db.js';
 import { createApp } from '../src/app.js';
 import { seed, DEMO_EMAIL, DEMO_PASSWORD } from '../src/seed.js';
+import { outbox } from '../src/lib/mailer.js';
 
 process.env.DISABLE_PUSH = '1';
 process.env.RATE_LIMIT = 'off';
@@ -143,6 +144,86 @@ describe('chat', () => {
     expect((await call('GET', `/matches/${id}/messages`, undefined, outsider.accessToken)).status).toBe(404);
     expect((await call('DELETE', `/matches/${id}`, undefined, s.accessToken)).status).toBe(204);
     expect((await call('POST', `/matches/${id}/messages`, { body: 'hi' }, s.accessToken)).status).toBe(404);
+  });
+});
+
+const lastCode = (to: string) => {
+  const mail = [...outbox].reverse().find((m) => m.to === to);
+  return mail?.text.match(/\b(\d{6})\b/)?.[1] ?? '';
+};
+
+describe('email verification and password reset', () => {
+  it('emails a code at sign up and gates swiping until it is confirmed', async () => {
+    const s = (await call('POST', '/auth/signup', { email: 'verify@x.com', password: 'a-strong-pass-1' })).json;
+    expect((await call('GET', '/me', undefined, s.accessToken)).json.emailVerified).toBe(false);
+    const code = lastCode('verify@x.com');
+    expect(code).toMatch(/^\d{6}$/);
+
+    const blocked = await call('POST', '/swipes', { targetId: crypto.randomUUID(), liked: true }, s.accessToken);
+    expect(blocked.status).toBe(403);
+    expect(blocked.json.code).toBe('verify-email');
+
+    // Resending right away is throttled.
+    expect((await call('POST', '/auth/email/send-verification', undefined, s.accessToken)).status).toBe(400);
+    const wrong = code === '000000' ? '111111' : '000000';
+    expect((await call('POST', '/auth/email/verify', { code: wrong }, s.accessToken)).status).toBe(400);
+    expect((await call('POST', '/auth/email/verify', { code }, s.accessToken)).status).toBe(204);
+    expect((await call('GET', '/me', undefined, s.accessToken)).json.emailVerified).toBe(true);
+    // Codes are single use.
+    expect((await call('POST', '/auth/email/verify', { code }, s.accessToken)).status).toBe(400);
+  });
+
+  it('burns a code after five wrong guesses', async () => {
+    const s = (await call('POST', '/auth/signup', { email: 'guess@x.com', password: 'a-strong-pass-1' })).json;
+    const code = lastCode('guess@x.com');
+    const wrong = code === '000000' ? '111111' : '000000';
+    for (let i = 0; i < 5; i++) await call('POST', '/auth/email/verify', { code: wrong }, s.accessToken);
+    expect((await call('POST', '/auth/email/verify', { code }, s.accessToken)).status).toBe(400);
+  });
+
+  it('resets a forgotten password and signs out every device', async () => {
+    const before = (await call('POST', '/auth/signup', { email: 'forgot@x.com', password: 'a-strong-pass-1' })).json;
+    expect((await call('POST', '/auth/password/forgot', { email: 'nobody-here@x.com' })).status).toBe(204);
+    await db.query(`UPDATE email_codes SET created_at = now() - interval '1 minute'`);
+    expect((await call('POST', '/auth/password/forgot', { email: 'forgot@x.com' })).status).toBe(204);
+    const code = lastCode('forgot@x.com');
+
+    const reset = await call('POST', '/auth/password/reset', { email: 'forgot@x.com', code, password: 'brand-new-pass-2' });
+    expect(reset.status).toBe(200);
+    expect(reset.json.accessToken).toBeTruthy();
+    expect((await call('POST', '/auth/refresh', { refreshToken: before.refreshToken })).status).toBe(401);
+    expect((await call('POST', '/auth/signin', { email: 'forgot@x.com', password: 'a-strong-pass-1' })).status).toBe(401);
+    expect((await call('POST', '/auth/signin', { email: 'forgot@x.com', password: 'brand-new-pass-2' })).status).toBe(200);
+    expect((await call('GET', '/me', undefined, reset.json.accessToken)).json.emailVerified).toBe(true);
+  });
+});
+
+describe('photos', () => {
+  const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 0x4a, 0x46, 0x49, 0x46, 0, 1, 2, 3]);
+  const put = (token: string, body: Uint8Array) =>
+    app.request('/me/photo', { method: 'PUT', headers: { authorization: `Bearer ${token}`, 'content-type': 'image/jpeg' }, body: body.slice().buffer });
+
+  it('uploads, serves and removes a profile photo', async () => {
+    const s = (await call('POST', '/auth/signin', { email: DEMO_EMAIL, password: DEMO_PASSWORD })).json;
+    expect((await put(s.accessToken, new TextEncoder().encode('<svg onload=alert(1)>'))).status).toBe(415);
+    const res = await put(s.accessToken, jpeg);
+    expect(res.status).toBe(200);
+    const { photoUrl } = await res.json();
+    expect(photoUrl).toMatch(/^\/photos\/[0-9a-f-]+\?v=\d+$/);
+    expect((await call('GET', '/me', undefined, s.accessToken)).json.profile.photoUrl).toBe(photoUrl);
+
+    const img = await app.request(photoUrl);
+    expect(img.headers.get('content-type')).toBe('image/jpeg');
+    expect(img.headers.get('cross-origin-resource-policy')).toBe('cross-origin');
+    expect(new Uint8Array(await img.arrayBuffer())).toEqual(jpeg);
+
+    // Other people see it on the demo account's card.
+    const priya = (await call('POST', '/auth/signin', { email: 'priya@demo.cliq.app', password: DEMO_PASSWORD })).json;
+    const { cards } = (await call('GET', '/discover', undefined, priya.accessToken)).json;
+    expect(cards.find((c: any) => c.displayName === 'Chris').photoUrl).toBe(photoUrl);
+
+    expect((await call('DELETE', '/me/photo', undefined, s.accessToken)).status).toBe(204);
+    expect((await app.request(photoUrl)).status).toBe(404);
   });
 });
 

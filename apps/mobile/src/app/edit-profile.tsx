@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 import { router } from 'expo-router';
-import { LocateFixed } from 'lucide-react-native';
+import { Camera, ImagePlus, LocateFixed, Trash2 } from 'lucide-react-native';
+import { Avatar } from '@/components/Avatar';
+import { pickPhoto } from '@/lib/photo';
 import { Button } from '@/components/Button';
 import { Field } from '@/components/Field';
 import { InterestPicker } from '@/components/InterestPicker';
@@ -32,6 +34,29 @@ export default function EditProfile() {
   const [busy, setBusy] = useState(false);
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+
+  // Photos save immediately, separately from the form, so the card updates while you edit.
+  const changePhoto = async (source: 'library' | 'camera' | 'remove') => {
+    setPhotoBusy(true);
+    setError(null);
+    try {
+      if (source === 'remove') {
+        await api.deletePhoto();
+        setProfile({ ...me!.profile, photoUrl: null });
+      } else {
+        const blob = await pickPhoto(source);
+        if (blob) {
+          const { photoUrl } = await api.uploadPhoto(blob);
+          setProfile({ ...me!.profile, photoUrl });
+        }
+      }
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
 
   const save = async () => {
     setBusy(true);
@@ -75,6 +100,46 @@ export default function EditProfile() {
           </Pressable>
         }
       />
+
+      <Section title="Photo" footer="Optional. Your palette still frames your card, and you can remove the photo any time.">
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+          <Avatar name={displayName} palette={palette} photo={me!.profile.photoUrl} size={76} />
+          <View style={{ flex: 1, gap: 8 }}>
+            <Button
+              label={me!.profile.photoUrl ? 'Choose a different photo' : 'Add a photo'}
+              variant="secondary"
+              size="md"
+              loading={photoBusy}
+              icon={<ImagePlus size={16} color={colors.ink} />}
+              onPress={() => changePhoto('library')}
+            />
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {Platform.OS !== 'web' ? (
+                <Button
+                  label="Camera"
+                  variant="ghost"
+                  size="md"
+                  icon={<Camera size={16} color={colors.inkSoft} />}
+                  onPress={() => changePhoto('camera')}
+                  disabled={photoBusy}
+                  style={{ flex: 1 }}
+                />
+              ) : null}
+              {me!.profile.photoUrl ? (
+                <Button
+                  label="Remove"
+                  variant="ghost"
+                  size="md"
+                  icon={<Trash2 size={16} color={colors.inkSoft} />}
+                  onPress={() => changePhoto('remove')}
+                  disabled={photoBusy}
+                  style={{ flex: 1 }}
+                />
+              ) : null}
+            </View>
+          </View>
+        </View>
+      </Section>
 
       <Section title="Basics">
         <Field label="Name" value={displayName} onChangeText={setDisplayName} maxLength={40} />

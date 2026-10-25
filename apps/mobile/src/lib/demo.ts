@@ -4,7 +4,7 @@
  */
 import type { Card, MatchSummary, Me, Message, Profile, ProfilePatch, ServerEvent } from './types';
 
-type Person = Omit<Card, 'sharedInterests' | 'distance'> & { miles: number; likesYou: boolean; replies: string[] };
+type Person = Omit<Card, 'sharedInterests' | 'distance' | 'photoUrl'> & { miles: number; likesYou: boolean; replies: string[] };
 
 const people: Person[] = [
   { id: 'maya', displayName: 'Maya', age: 23, gigTitle: 'Barista', gigPlace: 'Ramapo College', bio: 'Latte art in progress. Looking for a hiking buddy who doesn’t mind early starts.', interests: ['Hiking', 'Coffee', 'Photography', 'Film'], palette: ['apricot', 'rose'], city: 'Mahwah, NJ', miles: 2, likesYou: true, replies: ['Hi!! Okay I’m so glad you swiped 😄', 'Have you done the Ramapo Reservation loop? Sunrise there is unreal', 'I’m free Sunday morning if you want to try it'] },
@@ -25,19 +25,23 @@ const ago = (mins: number) => new Date(Date.now() - mins * 60_000).toISOString()
 
 const blankProfile = (): Profile => ({
   displayName: '', bio: '', birthday: null, age: null, gender: null, gigTitle: '', gigPlace: '', interests: [],
-  palette: ['iris', 'rose'], city: '', hasLocation: false, ageMin: 18, ageMax: 99, maxDistanceMi: 25, onboarded: false,
+  palette: ['iris', 'rose'], city: '', hasLocation: false, ageMin: 18, ageMax: 99, maxDistanceMi: 25, onboarded: false, photoUrl: null,
 });
 
 const demoProfile = (): Profile => ({
   displayName: 'Chris', bio: 'Built the first Cliq for my senior project. Now I’m looking for people to grab coffee with.',
   birthday: '2001-05-14', age: 23, gender: 'unspecified', gigTitle: 'Developer', gigPlace: 'Ramapo College',
   interests: ['Coding', 'Coffee', 'Hiking', 'Video games', 'Film'], palette: ['iris', 'orchid'], city: 'Mahwah, NJ',
-  hasLocation: true, ageMin: 18, ageMax: 40, maxDistanceMi: 25, onboarded: true,
+  hasLocation: true, ageMin: 18, ageMax: 40, maxDistanceMi: 25, onboarded: true, photoUrl: null,
 });
+
+/** The demo can't send email, so every code is this one (the screens say so). */
+export const DEMO_CODE = '246810';
 
 const state = {
   profile: blankProfile(),
   email: '',
+  verified: true,
   swiped: new Set<string>(),
   liked: 0,
   matches: [] as { id: string; person: Person; matchedAt: string; replyIndex: number }[],
@@ -47,9 +51,10 @@ const state = {
 let emit: (event: ServerEvent) => void = () => {};
 export const onDemoEvent = (fn: (event: ServerEvent) => void) => (emit = fn);
 
-function reset(profile: Profile, email: string) {
+function reset(profile: Profile, email: string, verified = true) {
   state.profile = profile;
   state.email = email;
+  state.verified = verified;
   state.swiped = new Set();
   state.liked = 0;
   state.matches = [{ id: 'm-ava', person: ava, matchedAt: ago(60 * 26), replyIndex: 0 }];
@@ -71,7 +76,7 @@ function toCard(p: Person): Card {
   return {
     id: p.id, displayName: p.displayName, age: p.age, bio: p.bio, gigTitle: p.gigTitle, gigPlace: p.gigPlace,
     interests: p.interests, sharedInterests: p.interests.filter((i) => mine.has(i)), palette: p.palette, city: p.city,
-    distance: p.miles < 1 ? 'Under a mile away' : `${p.miles} mi away`,
+    distance: p.miles < 1 ? 'Under a mile away' : `${p.miles} mi away`, photoUrl: null,
   };
 }
 
@@ -113,7 +118,7 @@ export const demoApi = {
     await wait();
     if (!/^\S+@\S+\.\S+$/.test(email)) throw fail('Enter a valid email address');
     if (password.length < 10) throw fail('Use at least 10 characters');
-    reset(blankProfile(), email);
+    reset(blankProfile(), email, false);
     return tokens();
   },
   async signIn(email: string, _password: string) {
@@ -123,6 +128,42 @@ export const demoApi = {
   },
   async signInWithApple() {
     throw fail('Sign in with Apple works in the iOS app');
+  },
+  async signInWithGoogle(_idToken: string) {
+    throw fail('Google sign in needs the real API');
+  },
+  async sendVerification() {
+    await wait();
+  },
+  async verifyEmail(code: string) {
+    await wait();
+    if (code !== DEMO_CODE) throw fail('That code isn’t right.');
+    state.verified = true;
+  },
+  async forgotPassword(_email: string) {
+    await wait();
+  },
+  async resetPassword(email: string, code: string, password: string) {
+    await wait();
+    if (code !== DEMO_CODE) throw fail('That code isn’t right.');
+    if (password.length < 10) throw fail('Use at least 10 characters');
+    reset(demoProfile(), email);
+    return tokens();
+  },
+  async uploadPhoto(photo: Blob) {
+    await wait(400);
+    // Inline the image so it survives in the single-file demo without a server.
+    const photoUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(fail('Couldn’t read that photo'));
+      reader.readAsDataURL(photo);
+    });
+    state.profile = { ...state.profile, photoUrl };
+    return { photoUrl };
+  },
+  async deletePhoto() {
+    state.profile = { ...state.profile, photoUrl: null };
   },
   async signOut() {},
   async changePassword() {
@@ -136,6 +177,8 @@ export const demoApi = {
       email: state.email,
       hasPassword: true,
       linkedApple: false,
+      linkedGoogle: false,
+      emailVerified: state.verified,
       profile: { ...state.profile },
       stats: { likesSent: state.liked, swipes: state.swiped.size, matches: state.matches.length },
     };
@@ -175,6 +218,7 @@ export const demoApi = {
   },
   async swipe(targetId: string, liked: boolean) {
     await wait(150);
+    if (!state.verified) throw Object.assign(fail('Confirm your email first'), { status: 403, code: 'verify-email' });
     state.swiped.add(targetId);
     if (!liked) return { matchId: null };
     state.liked++;
@@ -195,6 +239,7 @@ export const demoApi = {
     return { messages: [...(state.messages.get(matchId) ?? [])], hasMore: false };
   },
   async send(matchId: string, body: string) {
+    if (!state.verified) throw Object.assign(fail('Confirm your email first'), { status: 403, code: 'verify-email' });
     const message = push(matchId, ME_ID, body.trim());
     scheduleReply(matchId);
     return message;

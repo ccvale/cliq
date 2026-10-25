@@ -49,6 +49,14 @@
       "expo-image",
       "expo-apple-authentication",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Cliq lets you choose a photo for your profile card.",
+          "cameraPermission": "Cliq lets you take a photo for your profile card.",
+          "microphonePermission": false
+        }
+      ],
+      [
         "expo-location",
         {
           "locationWhenInUsePermission": "Cliq uses your approximate location to find friends near you."

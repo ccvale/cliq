@@ -28,7 +28,8 @@ docs/       Senior project report, test plan, redesign screenshots
 - **It's mutual**: a match moment where both palettes meet, then straight into chat.
 - **Friends and chat**: realtime messages over WebSockets, typing indicator, read receipts, grouped bubbles tinted with your palette, unmatch, and report-and-block.
 - **Your palette themes everything**, just like the original: buttons, accents, sliders and chat bubbles all follow the two colors you pick.
-- **Native touches**: Face ID / fingerprint app lock, Keychain/Keystore token storage, Sign in with Apple, push notifications for matches and messages, on-device reverse geocoding, light and dark mode.
+- **Optional photo**: pick or take one, cropped to the card's shape and re-encoded on device (which also strips GPS metadata), then faded into your palette so the colors still lead.
+- **Native touches**: Face ID / fingerprint app lock, Keychain/Keystore token storage, Sign in with Apple and Google, one-time-code autofill for email codes, push notifications for matches and messages, on-device reverse geocoding, light and dark mode.
 - **Web**: the same screens with a sidebar layout on wide windows; mouse drag and keyboard (Enter to send) work.
 
 ### The API (no third-party auth or database service)
@@ -38,6 +39,8 @@ docs/       Senior project report, test plan, redesign screenshots
 | Passwords | scrypt (N=2^15) with per-user salt, constant-time compare, dummy hash for unknown emails |
 | Sessions | 15-minute HS256 access tokens plus single-use 30-day refresh tokens stored as SHA-256 hashes. Reusing a rotated refresh token revokes the whole session family |
 | Social sign-in | Apple and Google identity tokens verified against the providers' public keys |
+| Email | 6-digit codes to confirm your address and to reset a forgotten password. Codes are HMAC-hashed, expire in 15 minutes, allow 5 guesses and can be resent every 45 seconds. Swiping and messaging wait until the email is confirmed. "Forgot password" answers the same whether or not an account exists |
+| Photos | Stored by the API itself (no bucket service). Type is checked from the file's bytes, capped at 2 MB, served with a versioned immutable cache URL |
 | Abuse | Per-IP rate limiting on auth routes, report-and-block, teens (13–17) and adults never see each other |
 | Location | Coarsened to ~1km before storage; others only ever see whole miles. No geocoding API needed |
 | Discovery | Bounding box in SQL, exact distance and mutual age/radius preferences in code, ranked by an evolved version of the original scoring algorithm |
@@ -61,7 +64,7 @@ npm install
 npx expo start    # press w for web, or scan the QR code with a development build
 ```
 
-Sign in with **demo@cliq.app / cliq-demo-2024**. Maya, Jordan, Theo, Riley and Diego have already liked the demo account, so swiping right on them makes a match. Use `SEED_LAT` / `SEED_LNG` to seed around your own location.
+Sign in with **demo@cliq.app / cliq-demo-2024**. When you sign up a new account, the verification code is printed in the API's terminal (set `SMTP_URL` to send real email). Maya, Jordan, Theo, Riley and Diego have already liked the demo account, so swiping right on them makes a match. Use `SEED_LAT` / `SEED_LNG` to seed around your own location.
 
 On a phone, the app talks to the API on the same machine that runs Metro. Set `EXPO_PUBLIC_API_URL` to point it somewhere else.
 
@@ -76,10 +79,12 @@ npx eas-cli@latest build --profile development --platform ios
 
 Push notifications also need an EAS project id (`npx eas-cli init`). Set `APPLE_AUDIENCES` on the server to your bundle id (`fi.cliq.app`).
 
+For Google sign in, create OAuth client IDs in Google Cloud, put them in `apps/mobile/.env` (see [`.env.example`](apps/mobile/.env.example)) and in `GOOGLE_AUDIENCES` on the server. The button stays hidden until an id is set.
+
 ### Tests
 
 ```bash
-cd apps/server && npm test        # auth, token rotation, discovery rules, matching, chat
+cd apps/server && npm test        # auth, token rotation, email codes, password reset, photos, discovery, matching, chat
 cd apps/mobile && npx tsc --noEmit
 ```
 
@@ -89,7 +94,4 @@ See [`apps/server/.env.example`](apps/server/.env.example). In production, `JWT_
 
 ## What's next
 
-- Email verification and password reset (needs an email sender)
-- Optional profile photo upload
-- Google sign-in button on the client (the server side is ready)
-- Deploying the API (any Node host with Postgres) and the web build (`npm run export:web`, then any static host)
+- Deploying the API (any Node host with Postgres and an SMTP sender) and the web build (`npm run export:web`, then any static host)

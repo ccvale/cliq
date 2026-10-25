@@ -92,6 +92,17 @@ export function AuthForm({ mode }: { mode: 'signUp' | 'signIn' }) {
             {reveal ? <EyeOff size={20} color={colors.muted} /> : <Eye size={20} color={colors.muted} />}
           </Pressable>
         </View>
+        {!signUp ? (
+          <Pressable
+            onPress={() => router.push({ pathname: '/forgot-password', params: { email } })}
+            hitSlop={8}
+            style={{ alignSelf: 'flex-end', marginTop: -6 }}
+          >
+            <Txt variant="label" tone="accent">
+              Forgot password?
+            </Txt>
+          </Pressable>
+        ) : null}
         {error ? (
           <Txt variant="label" tone="danger">
             {error}

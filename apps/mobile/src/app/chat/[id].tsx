@@ -89,7 +89,8 @@ export default function Chat() {
       setMessages((list) => (list?.some((m) => m.id === sent.id) ? list : [...(list ?? []), sent]));
     } catch (e: any) {
       setDraft(body);
-      setError(e.message);
+      if (e.code === 'verify-email') router.push('/verify-email');
+      else setError(e.message);
     }
   };
 
@@ -128,7 +129,7 @@ export default function Chat() {
         </Pressable>
         {person ? (
           <Pressable onPress={() => setShowProfile(true)} style={styles.who} accessibilityLabel={`View ${person.displayName}'s profile`}>
-            <Avatar name={person.displayName} palette={person.palette} size={40} />
+            <Avatar name={person.displayName} palette={person.palette} photo={person.photoUrl} size={40} />
             <View style={{ flex: 1 }}>
               <Txt variant="heading" numberOfLines={1}>
                 {person.displayName}
@@ -160,7 +161,7 @@ export default function Chat() {
           ListFooterComponent={
             person && !hasMore ? (
               <View style={{ alignItems: 'center', gap: 10, paddingVertical: 28 }}>
-                <Avatar name={person.displayName} palette={person.palette} size={72} />
+                <Avatar name={person.displayName} palette={person.palette} photo={person.photoUrl} size={72} />
                 <Txt variant="title" center>
                   You and {person.displayName} clicked
                 </Txt>

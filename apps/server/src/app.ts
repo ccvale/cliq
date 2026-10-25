@@ -12,19 +12,23 @@ import { authRoutes } from './routes/auth.js';
 import { meRoutes } from './routes/me.js';
 import { discoverRoutes } from './routes/discover.js';
 import { loadMatch, matchRoutes } from './routes/matches.js';
+import { photoRoutes } from './routes/photos.js';
 
 export function createApp(db: Db) {
   const hub = new Hub();
   const app = new Hono();
   const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
 
-  app.use('*', secureHeaders());
+  // Photos are loaded by <img> from the web app's origin, so they need a cross-origin resource policy.
+  const strict = secureHeaders();
+  const embeddable = secureHeaders({ crossOriginResourcePolicy: 'cross-origin' });
+  app.use('*', (c, next) => (c.req.path.startsWith('/photos/') ? embeddable : strict)(c, next));
   app.use(
     '*',
     cors({
       origin: (origin) => (config.corsOrigins.includes(origin) ? origin : null),
       allowHeaders: ['authorization', 'content-type'],
-      allowMethods: ['GET', 'POST', 'PATCH', 'DELETE'],
+      allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
       maxAge: 600,
     }),
   );
@@ -34,6 +38,7 @@ export function createApp(db: Db) {
   app.route('/me', meRoutes(db));
   app.route('/', discoverRoutes(db, hub));
   app.route('/', matchRoutes(db, hub));
+  app.route('/', photoRoutes(db));
 
   /**
    * Realtime channel. Browsers can't set headers on a WebSocket, and tokens in URLs end up in logs,
@@ -85,7 +90,10 @@ export function createApp(db: Db) {
   );
 
   app.onError((err, c) => {
-    if (err instanceof HTTPException) return c.json({ error: err.message }, err.status);
+    if (err instanceof HTTPException) {
+      // A string cause is a machine-readable code the app can act on, such as 'verify-email'.
+      return c.json({ error: err.message, ...(typeof err.cause === 'string' && { code: err.cause }) }, err.status);
+    }
     console.error(err);
     return c.json({ error: 'Something went wrong on our end' }, 500);
   });

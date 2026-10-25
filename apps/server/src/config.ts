@@ -21,5 +21,7 @@ export const config = {
   corsOrigins: list(env.CORS_ORIGINS ?? 'http://localhost:8081,http://localhost:19006'),
   appleAudiences: list(env.APPLE_AUDIENCES),
   googleAudiences: list(env.GOOGLE_AUDIENCES),
+  smtpUrl: env.SMTP_URL || undefined,
+  mailFrom: env.MAIL_FROM ?? 'Cliq <hello@cliq.fi>',
   isProd,
 };

@@ -1,6 +1,7 @@
 import { createMiddleware } from 'hono/factory';
 import { HTTPException } from 'hono/http-exception';
 import { verifyAccessToken } from './tokens.js';
+import type { Db } from '../db.js';
 
 export type AuthEnv = { Variables: { userId: string; family: string } };
 
@@ -16,6 +17,16 @@ export const requireAuth = createMiddleware<AuthEnv>(async (c, next) => {
   }
   await next();
 });
+
+/** Blocks actions that reach other people until the account's email is confirmed. Use after requireAuth. */
+export const requireVerified = (db: Db) =>
+  createMiddleware<AuthEnv>(async (c, next) => {
+    const row = await db.one<{ verified: boolean }>('SELECT email_verified_at IS NOT NULL AS verified FROM users WHERE id = $1', [
+      c.var.userId,
+    ]);
+    if (!row?.verified) throw new HTTPException(403, { message: 'Confirm your email first', cause: 'verify-email' });
+    await next();
+  });
 
 /** Fixed-window limiter keyed by client address. Enough to blunt password guessing on a single instance. */
 export function rateLimit({ limit, windowMs }: { limit: number; windowMs: number }) {

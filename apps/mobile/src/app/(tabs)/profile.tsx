@@ -61,6 +61,7 @@ export default function Profile() {
             palette: p.palette,
             city: p.city,
             distance: 'This is you',
+            photoUrl: p.photoUrl,
           }}
           style={{ width: cardWidth, height: cardWidth * 1.35 }}
         />

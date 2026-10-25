@@ -1,6 +1,9 @@
 import { StyleSheet, View, type ViewStyle } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Briefcase, MapPin, Sparkles } from 'lucide-react-native';
+import { photoSource } from '@/lib/api';
 import type { Card } from '@/lib/types';
 import { font, radius } from '@/theme/tokens';
 import { paletteTones } from './Avatar';
@@ -14,13 +17,26 @@ export function ProfileCard({ card, style, compact }: { card: Card; style?: View
   const tones = paletteTones(card.palette);
   const shared = new Set(card.sharedInterests);
   const gig = [card.gigTitle, card.gigPlace].filter(Boolean).join(' · ');
+  const photo = photoSource(card.photoUrl);
 
   return (
     <MeshGradient {...tones} style={[styles.card, style]}>
-      {/* Oversized initial as a quiet watermark. */}
-      <Txt style={styles.watermark} numberOfLines={1}>
-        {card.displayName.charAt(0)}
-      </Txt>
+      {photo ? (
+        <>
+          <Image source={photo} style={[StyleSheet.absoluteFill, styles.photo]} contentFit="cover" transition={250} accessibilityLabel={`Photo of ${card.displayName}`} />
+          {/* Fade the photo into the palette so the type stays legible and the colors still lead. */}
+          <LinearGradient
+            colors={['rgba(0,0,0,0.25)', 'transparent', `${tones.to}cc`, tones.to]}
+            locations={[0, 0.3, 0.68, 1]}
+            style={[StyleSheet.absoluteFill, styles.photo]}
+          />
+        </>
+      ) : (
+        /* Oversized initial as a quiet watermark. */
+        <Txt style={styles.watermark} numberOfLines={1}>
+          {card.displayName.charAt(0)}
+        </Txt>
+      )}
 
       <View style={styles.topRow}>
         <View style={styles.pill}>
@@ -92,6 +108,7 @@ const styles = StyleSheet.create({
     lineHeight: 330,
     color: 'rgba(255,255,255,0.14)',
   },
+  photo: { borderRadius: radius.xl },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
   pill: {
     flexDirection: 'row',

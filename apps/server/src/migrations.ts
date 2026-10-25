@@ -89,4 +89,26 @@ export const migrations: string[] = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
   `,
+  `
+  ALTER TABLE users ADD COLUMN email_verified_at TIMESTAMPTZ;
+
+  CREATE TABLE email_codes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    purpose TEXT NOT NULL CHECK (purpose IN ('verify', 'reset')),
+    code_hash TEXT NOT NULL,
+    attempts INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at TIMESTAMPTZ NOT NULL,
+    used_at TIMESTAMPTZ
+  );
+  CREATE INDEX email_codes_user_idx ON email_codes (user_id, purpose, created_at DESC);
+
+  CREATE TABLE photos (
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    mime TEXT NOT NULL,
+    data BYTEA NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  `,
 ];

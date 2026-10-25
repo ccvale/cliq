@@ -1,4 +1,6 @@
 import { View } from 'react-native';
+import { Image } from 'expo-image';
+import { photoSource } from '@/lib/api';
 import { PALETTE, type PaletteId } from '@/lib/catalog';
 import { font } from '@/theme/tokens';
 import { MeshGradient } from './MeshGradient';
@@ -11,7 +13,10 @@ export function paletteTones(palette: [string, string]) {
   };
 }
 
-export function Avatar({ name, palette, size = 48, ring }: { name: string; palette: [string, string]; size?: number; ring?: string }) {
+type Props = { name: string; palette: [string, string]; photo?: string | null; size?: number; ring?: string };
+
+export function Avatar({ name, palette, photo, size = 48, ring }: Props) {
+  const source = photoSource(photo);
   const tones = paletteTones(palette);
   return (
     <View
@@ -28,9 +33,19 @@ export function Avatar({ name, palette, size = 48, ring }: { name: string; palet
         {...tones}
         style={{ width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center' }}
       >
-        <Txt style={{ color: '#fff', fontFamily: font.display, fontSize: size * 0.42, lineHeight: size * 0.5 }}>
-          {name.trim().charAt(0).toUpperCase() || '·'}
-        </Txt>
+        {source ? (
+          <Image
+            source={source}
+            style={{ width: size, height: size, borderRadius: size / 2 }}
+            contentFit="cover"
+            transition={200}
+            accessibilityLabel={`Photo of ${name}`}
+          />
+        ) : (
+          <Txt style={{ color: '#fff', fontFamily: font.display, fontSize: size * 0.42, lineHeight: size * 0.5 }}>
+            {name.trim().charAt(0).toUpperCase() || '·'}
+          </Txt>
+        )}
       </MeshGradient>
     </View>
   );

@@ -70,6 +70,7 @@ export default function Onboarding() {
       palette,
       city: city || 'Your city',
       distance: 'Nearby',
+      photoUrl: null,
     }),
     [name, age, bio, gigTitle, gigPlace, interests, palette, city],
   );

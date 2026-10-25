@@ -3,7 +3,8 @@ import { HTTPException } from 'hono/http-exception';
 import { validate as zValidator } from '../lib/validate.js';
 import { z } from 'zod';
 import type { Db, Row } from '../db.js';
-import { requireAuth, type AuthEnv } from '../auth/middleware.js';
+import { requireAuth, requireVerified, type AuthEnv } from '../auth/middleware.js';
+import { photoUrl } from './photos.js';
 import { ageBand, ageOn } from '../lib/age.js';
 import { distanceLabel, distanceMiles } from '../lib/geo.js';
 import { score } from '../lib/scoring.js';
@@ -21,13 +22,14 @@ export type CardDto = {
   palette: [string, string];
   city: string;
   distance: string;
+  photoUrl: string | null;
 };
 
 export function discoverRoutes(db: Db, hub: Hub) {
   const r = new Hono<AuthEnv>();
   // Mounted at the root, so guard only this router's paths (not /ws or /health).
   r.use('/discover', requireAuth);
-  r.use('/swipes', requireAuth);
+  r.use('/swipes', requireAuth, requireVerified(db));
 
   r.get('/discover', zValidator('query', z.object({ limit: z.coerce.number().int().min(1).max(50).default(20) })), async (c) => {
     const me = await db.one('SELECT * FROM profiles WHERE user_id = $1', [c.var.userId]);
@@ -40,8 +42,9 @@ export function discoverRoutes(db: Db, hub: Hub) {
     const latSpan = me.max_distance_mi / 69;
     const lngSpan = me.max_distance_mi / (69 * Math.max(0.1, Math.cos((me.lat * Math.PI) / 180)));
     const candidates = await db.query(
-      `SELECT p.*, EXISTS (SELECT 1 FROM swipes s WHERE s.swiper_id = p.user_id AND s.target_id = $1 AND s.liked) AS liked_you
+      `SELECT p.*, ph.updated_at AS photo_at, EXISTS (SELECT 1 FROM swipes s WHERE s.swiper_id = p.user_id AND s.target_id = $1 AND s.liked) AS liked_you
        FROM profiles p
+       LEFT JOIN photos ph ON ph.user_id = p.user_id
        WHERE p.onboarded AND p.user_id <> $1
          AND p.lat BETWEEN $2 AND $3 AND p.lng BETWEEN $4 AND $5
          AND NOT EXISTS (SELECT 1 FROM swipes s WHERE s.swiper_id = $1 AND s.target_id = p.user_id)
@@ -133,5 +136,6 @@ export function toCard(p: Row, age: number, miles: number, shared: string[]): Ca
     palette: p.palette,
     city: p.city,
     distance: distanceLabel(miles),
+    photoUrl: photoUrl(p.user_id, p.photo_at),
   };
 }

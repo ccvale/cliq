@@ -31,7 +31,7 @@ function Ripple({ delay, color }: { delay: number; color: string }) {
 
 /** "You clicked" moment: two avatars slide together while rings ripple out. */
 export default function MatchMoment() {
-  const { id, name, palette } = useLocalSearchParams<{ id: string; name: string; palette: string }>();
+  const { id, name, palette, photo } = useLocalSearchParams<{ id: string; name: string; palette: string; photo?: string }>();
   const { me } = useSession();
   const { scheme, accent } = useTheme();
   const theirs = (palette?.split(',') ?? ['iris', 'rose']) as [string, string];
@@ -55,10 +55,10 @@ export default function MatchMoment() {
           <Ripple delay={800} color={accent.to} />
           <Ripple delay={1600} color={accent.from} />
           <Animated.View style={leftStyle}>
-            <Avatar name={me?.profile.displayName ?? ''} palette={me?.profile.palette ?? ['iris', 'rose']} size={112} />
+            <Avatar name={me?.profile.displayName ?? ''} palette={me?.profile.palette ?? ['iris', 'rose']} photo={me?.profile.photoUrl} size={112} />
           </Animated.View>
           <Animated.View style={rightStyle}>
-            <Avatar name={name ?? ''} palette={theirs} size={112} />
+            <Avatar name={name ?? ''} palette={theirs} photo={photo || null} size={112} />
           </Animated.View>
         </View>
 

@@ -48,7 +48,7 @@ export async function seed(db: Db, center = { lat: 41.09, lng: -74.15 }) {
   if (existing) return existing.id as string;
 
   const insert = async (email: string, p: Person, i: number, lat: number, lng: number) => {
-    const u = await db.one<{ id: string }>('INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id', [
+    const u = await db.one<{ id: string }>('INSERT INTO users (email, password_hash, email_verified_at) VALUES ($1, $2, now()) RETURNING id', [
       email,
       await hashPassword(DEMO_PASSWORD),
     ]);

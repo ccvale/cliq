@@ -7,6 +7,7 @@ import { requireAuth, type AuthEnv } from '../auth/middleware.js';
 import { GENDERS, INTERESTS, PALETTE_IDS } from '../lib/catalog.js';
 import { ageOn, bandBounds } from '../lib/age.js';
 import { coarsen } from '../lib/geo.js';
+import { photoUrl } from './photos.js';
 
 export const toProfile = (p: Row) => ({
   displayName: p.display_name as string,
@@ -24,6 +25,7 @@ export const toProfile = (p: Row) => ({
   ageMax: p.age_max as number,
   maxDistanceMi: p.max_distance_mi as number,
   onboarded: p.onboarded as boolean,
+  photoUrl: photoUrl(p.user_id, p.photo_at),
 });
 
 const profilePatch = z
@@ -47,10 +49,14 @@ export function meRoutes(db: Db) {
   const r = new Hono<AuthEnv>();
   r.use('*', requireAuth);
 
-  const load = (userId: string) => db.one('SELECT * FROM profiles WHERE user_id = $1', [userId]);
+  const load = (userId: string) =>
+    db.one(
+      'SELECT p.*, ph.updated_at AS photo_at FROM profiles p LEFT JOIN photos ph ON ph.user_id = p.user_id WHERE p.user_id = $1',
+      [userId],
+    );
 
   r.get('/', async (c) => {
-    const user = await db.one('SELECT id, email, password_hash IS NOT NULL AS has_password, apple_sub IS NOT NULL AS apple FROM users WHERE id = $1', [
+    const user = await db.one('SELECT id, email, password_hash IS NOT NULL AS has_password, apple_sub IS NOT NULL AS apple, google_sub IS NOT NULL AS google, email_verified_at IS NOT NULL AS verified FROM users WHERE id = $1', [
       c.var.userId,
     ]);
     if (!user) throw new HTTPException(401, { message: 'Account no longer exists' });
@@ -67,6 +73,8 @@ export function meRoutes(db: Db) {
       email: user.email,
       hasPassword: user.has_password,
       linkedApple: user.apple,
+      linkedGoogle: user.google,
+      emailVerified: user.verified,
       profile: toProfile((await load(c.var.userId))!),
       stats: { likesSent: stats!.likes_sent, swipes: stats!.swipes, matches: stats!.matches },
     });
@@ -117,7 +125,7 @@ export function meRoutes(db: Db) {
     const saved = await db.one(
       `UPDATE profiles SET display_name=$2, bio=$3, birthday=$4, gender=$5, gig_title=$6, gig_place=$7, interests=$8,
         palette=$9, lat=$10, lng=$11, city=$12, age_min=$13, age_max=$14, max_distance_mi=$15, onboarded=$16, updated_at=now()
-       WHERE user_id=$1 RETURNING *`,
+       WHERE user_id=$1 RETURNING *, (SELECT updated_at FROM photos WHERE user_id = $1) AS photo_at`,
       [
         c.var.userId, next.display_name, next.bio, next.birthday, next.gender, next.gig_title, next.gig_place,
         next.interests, next.palette, next.lat, next.lng, next.city, next.age_min, next.age_max, next.max_distance_mi, next.onboarded,

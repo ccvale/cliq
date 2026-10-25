@@ -16,6 +16,7 @@ export type Profile = {
   ageMax: number;
   maxDistanceMi: number;
   onboarded: boolean;
+  photoUrl: string | null;
 };
 
 export type Me = {
@@ -23,6 +24,8 @@ export type Me = {
   email: string | null;
   hasPassword: boolean;
   linkedApple: boolean;
+  linkedGoogle: boolean;
+  emailVerified: boolean;
   profile: Profile;
   stats: { likesSent: number; swipes: number; matches: number };
 };
@@ -39,6 +42,7 @@ export type Card = {
   palette: Palette;
   city: string;
   distance: string;
+  photoUrl: string | null;
 };
 
 export type Message = { id: string; matchId: string; senderId: string; body: string; createdAt: string; readAt: string | null };
@@ -52,7 +56,7 @@ export type MatchSummary = {
 };
 
 export type ProfilePatch = Partial<
-  Omit<Profile, 'age' | 'city' | 'hasLocation' | 'onboarded' | 'gender'> & {
+  Omit<Profile, 'age' | 'city' | 'hasLocation' | 'onboarded' | 'gender' | 'photoUrl'> & {
     gender: Exclude<Profile['gender'], null>;
     location: { lat: number; lng: number; city: string };
   }

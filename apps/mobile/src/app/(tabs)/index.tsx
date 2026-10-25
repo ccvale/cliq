@@ -10,6 +10,7 @@ import { Screen } from '@/components/Screen';
 import { SwipeDeck, type DeckHandle } from '@/components/SwipeDeck';
 import { Txt } from '@/components/Txt';
 import { Wordmark } from '@/components/Wordmark';
+import { VerifyBanner } from '@/components/VerifyBanner';
 import { api } from '@/lib/api';
 import type { Card } from '@/lib/types';
 import { useSession } from '@/state/session';
@@ -52,10 +53,17 @@ export default function Discover() {
     try {
       const { matchId } = await api.swipe(card.id, liked);
       if (matchId) {
-        router.push({ pathname: '/match/[id]', params: { id: matchId, name: card.displayName, palette: card.palette.join(',') } });
+        router.push({ pathname: '/match/[id]', params: { id: matchId, name: card.displayName, palette: card.palette.join(','), photo: card.photoUrl ?? '' } });
       }
     } catch (e: any) {
-      setError(e.message);
+      if (e.code === 'verify-email') {
+        // Put the card back and ask for the code. The swipe didn't count.
+        setStats((s) => (liked ? { ...s, yes: s.yes - 1 } : { ...s, no: s.no - 1 }));
+        router.push('/verify-email');
+        void load();
+      } else {
+        setError(e.message);
+      }
     }
   };
 
@@ -79,6 +87,7 @@ export default function Discover() {
         </Pressable>
       </View>
 
+      <VerifyBanner />
       <View style={{ flex: 1, alignItems: 'center', paddingBottom: tabBarSpace }} onLayout={onLayout}>
         {cards === null ? (
           <ActivityIndicator style={{ flex: 1 }} color={accent.solid} />

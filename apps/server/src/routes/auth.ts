@@ -7,6 +7,8 @@ import { dummyVerify, hashPassword, verifyPassword } from '../auth/password.js';
 import { createSession, revokeFamily, rotateSession, RefreshError } from '../auth/tokens.js';
 import { verifyAppleToken, verifyGoogleToken, type ExternalIdentity } from '../auth/oauth.js';
 import { rateLimit, requireAuth, type AuthEnv } from '../auth/middleware.js';
+import { CodeError, consumeCode, issueCode } from '../auth/codes.js';
+import { codeEmail, sendMail } from '../lib/mailer.js';
 
 const email = z.string().trim().toLowerCase().email('Enter a valid email address').max(254);
 const password = z
@@ -20,6 +22,17 @@ export function authRoutes(db: Db) {
   const ua = (c: { req: { header: (k: string) => string | undefined } }) => c.req.header('user-agent') ?? '';
   const limited = rateLimit({ limit: 10, windowMs: 60_000 });
 
+  const codeErrors = <T>(p: Promise<T>) =>
+    p.catch((err) => {
+      if (err instanceof CodeError) throw new HTTPException(400, { message: err.message });
+      throw err;
+    });
+
+  async function sendCode(userId: string, to: string, purpose: 'verify' | 'reset') {
+    const code = await codeErrors(issueCode(db, userId, purpose));
+    await sendMail({ to, ...codeEmail(purpose, code) });
+  }
+
   r.post('/signup', limited, zValidator('json', z.object({ email, password })), async (c) => {
     const body = c.req.valid('json');
     const exists = await db.one('SELECT 1 FROM users WHERE lower(email) = $1', [body.email]);
@@ -32,6 +45,8 @@ export function authRoutes(db: Db) {
       await t.query('INSERT INTO profiles (user_id) VALUES ($1)', [u!.id]);
       return u!;
     });
+    // A failed send shouldn't block sign up; the app offers a resend button.
+    await sendCode(user.id, body.email, 'verify').catch((err) => console.error('verification email failed', err));
     return c.json(await createSession(db, user.id, ua(c)), 201);
   });
 
@@ -56,14 +71,18 @@ export function authRoutes(db: Db) {
       if (id.email && id.emailVerified) {
         const byEmail = await t.one<{ id: string }>('SELECT id FROM users WHERE lower(email) = lower($1)', [id.email]);
         if (byEmail) {
-          await t.query(`UPDATE users SET ${column} = $1 WHERE id = $2`, [id.subject, byEmail.id]);
+          await t.query(`UPDATE users SET ${column} = $1, email_verified_at = coalesce(email_verified_at, now()) WHERE id = $2`, [
+            id.subject,
+            byEmail.id,
+          ]);
           return byEmail.id;
         }
       }
-      const u = await t.one<{ id: string }>(`INSERT INTO users (email, ${column}) VALUES ($1, $2) RETURNING id`, [
-        id.email && id.emailVerified ? id.email : null,
-        id.subject,
-      ]);
+      const verified = Boolean(id.email && id.emailVerified);
+      const u = await t.one<{ id: string }>(
+        `INSERT INTO users (email, ${column}, email_verified_at) VALUES ($1, $2, ${verified ? 'now()' : 'NULL'}) RETURNING id`,
+        [verified ? id.email : null, id.subject],
+      );
       await t.query('INSERT INTO profiles (user_id, display_name) VALUES ($1, $2)', [u!.id, displayName?.slice(0, 40) ?? '']);
       return u!.id;
     });
@@ -121,6 +140,52 @@ export function authRoutes(db: Db) {
         c.var.family,
       ]);
       return c.body(null, 204);
+    },
+  );
+
+  r.post('/email/send-verification', requireAuth, limited, async (c) => {
+    const user = await db.one<{ email: string | null; verified: boolean }>(
+      'SELECT email, email_verified_at IS NOT NULL AS verified FROM users WHERE id = $1',
+      [c.var.userId],
+    );
+    if (!user?.email) throw new HTTPException(400, { message: 'There’s no email on this account' });
+    if (user.verified) return c.body(null, 204);
+    await sendCode(c.var.userId, user.email, 'verify');
+    return c.body(null, 204);
+  });
+
+  r.post('/email/verify', requireAuth, limited, zValidator('json', z.object({ code: z.string().trim().max(10) })), async (c) => {
+    await codeErrors(consumeCode(db, c.var.userId, 'verify', c.req.valid('json').code));
+    await db.query('UPDATE users SET email_verified_at = coalesce(email_verified_at, now()) WHERE id = $1', [c.var.userId]);
+    return c.body(null, 204);
+  });
+
+  r.post('/password/forgot', limited, zValidator('json', z.object({ email })), async (c) => {
+    const { email: address } = c.req.valid('json');
+    const user = await db.one<{ id: string }>('SELECT id FROM users WHERE lower(email) = $1', [address]);
+    // Same answer whether or not the account exists, so this can't be used to discover who has signed up.
+    if (user) await sendCode(user.id, address, 'reset').catch((err) => {
+      if (!(err instanceof HTTPException)) console.error('reset email failed', err);
+    });
+    return c.body(null, 204);
+  });
+
+  r.post(
+    '/password/reset',
+    limited,
+    zValidator('json', z.object({ email, code: z.string().trim().max(10), password })),
+    async (c) => {
+      const body = c.req.valid('json');
+      const user = await db.one<{ id: string }>('SELECT id FROM users WHERE lower(email) = $1', [body.email]);
+      if (!user) throw new HTTPException(400, { message: 'That code has expired. Request a new one.' });
+      await codeErrors(consumeCode(db, user.id, 'reset', body.code));
+      // Receiving the code proves the inbox, so the address counts as verified too.
+      await db.query('UPDATE users SET password_hash = $1, email_verified_at = coalesce(email_verified_at, now()) WHERE id = $2', [
+        await hashPassword(body.password),
+        user.id,
+      ]);
+      await db.query('UPDATE sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL', [user.id]);
+      return c.json(await createSession(db, user.id, ua(c)));
     },
   );
 

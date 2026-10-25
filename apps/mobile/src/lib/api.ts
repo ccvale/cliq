@@ -19,10 +19,14 @@ export const API_URL = resolveBaseUrl();
 const REFRESH_KEY = 'cliq.refresh';
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  /** Machine-readable reason from the server, such as 'verify-email'. */
+  constructor(public status: number, message: string, public code?: string) {
     super(message);
   }
 }
+
+/** Photo URLs from the API are relative; demo photos are already absolute (data: or blob:). */
+export const photoSource = (url: string | null | undefined) => (url ? { uri: url.startsWith('/') ? `${API_URL}${url}` : url } : null);
 
 type Tokens = { accessToken: string; refreshToken: string };
 let accessToken: string | null = null;
@@ -78,14 +82,15 @@ function refresh(): Promise<boolean> {
 
 async function request<T>(method: string, path: string, body?: unknown, retry = true): Promise<T> {
   let res: Response;
+  const raw = body instanceof Blob;
   try {
     res = await fetch(`${API_URL}${path}`, {
       method,
       headers: {
-        ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
+        ...(body !== undefined ? { 'content-type': raw ? body.type || 'image/jpeg' : 'application/json' } : {}),
         ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}),
       },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body === undefined ? undefined : raw ? body : JSON.stringify(body),
     });
   } catch {
     throw new ApiError(0, 'Can’t reach Cliq right now. Check your connection.');
@@ -96,7 +101,7 @@ async function request<T>(method: string, path: string, body?: unknown, retry = 
   }
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new ApiError(res.status, typeof data?.error === 'string' ? data.error : 'Something went wrong');
+    throw new ApiError(res.status, typeof data?.error === 'string' ? data.error : 'Something went wrong', data?.code);
   }
   return (res.status === 204 ? undefined : await res.json()) as T;
 }
@@ -106,12 +111,20 @@ const realApi = {
   signIn: (email: string, password: string) => request<Tokens>('POST', '/auth/signin', { email, password }),
   signInWithApple: (identityToken: string, givenName?: string) =>
     request<Tokens>('POST', '/auth/apple', { identityToken, givenName }),
+  signInWithGoogle: (idToken: string) => request<Tokens>('POST', '/auth/google', { idToken }),
+  sendVerification: () => request<void>('POST', '/auth/email/send-verification'),
+  verifyEmail: (code: string) => request<void>('POST', '/auth/email/verify', { code }),
+  forgotPassword: (email: string) => request<void>('POST', '/auth/password/forgot', { email }),
+  resetPassword: (email: string, code: string, password: string) =>
+    request<Tokens>('POST', '/auth/password/reset', { email, code, password }),
   signOut: () => request<void>('POST', '/auth/signout'),
   changePassword: (current: string | undefined, next: string) => request<void>('POST', '/auth/password', { current, next }),
   deleteAccount: () => request<void>('DELETE', '/auth/account'),
 
   me: () => request<Me>('GET', '/me'),
   updateProfile: (patch: ProfilePatch) => request<Profile>('PATCH', '/me/profile', patch),
+  uploadPhoto: (photo: Blob) => request<{ photoUrl: string }>('PUT', '/me/photo', photo),
+  deletePhoto: () => request<void>('DELETE', '/me/photo'),
   registerPushToken: (token: string, platform: string) => request<void>('POST', '/me/push-token', { token, platform }),
 
   discover: () => request<{ cards: Card[]; reason?: string }>('GET', '/discover'),

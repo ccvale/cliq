@@ -3,7 +3,7 @@ import { HTTPException } from 'hono/http-exception';
 import { validate as zValidator } from '../lib/validate.js';
 import { z } from 'zod';
 import type { Db, Row } from '../db.js';
-import { requireAuth, type AuthEnv } from '../auth/middleware.js';
+import { requireAuth, requireVerified, type AuthEnv } from '../auth/middleware.js';
 import { ageOn } from '../lib/age.js';
 import { distanceMiles } from '../lib/geo.js';
 import { sendPush, type Hub, type MessageDto } from '../realtime.js';
@@ -40,11 +40,12 @@ export function matchRoutes(db: Db, hub: Hub) {
   r.get('/matches', async (c) => {
     const me = c.var.userId;
     const rows = await db.query(
-      `SELECT m.id AS match_id, m.created_at AS matched_at, p.*,
+      `SELECT m.id AS match_id, m.created_at AS matched_at, p.*, ph.updated_at AS photo_at,
               last.body AS last_body, last.sender_id AS last_sender, last.created_at AS last_at,
               (SELECT count(*)::int FROM messages x WHERE x.match_id = m.id AND x.sender_id <> $1 AND x.read_at IS NULL) AS unread
        FROM matches m
        JOIN profiles p ON p.user_id = CASE WHEN m.user_a = $1 THEN m.user_b ELSE m.user_a END
+       LEFT JOIN photos ph ON ph.user_id = p.user_id
        LEFT JOIN LATERAL (SELECT body, sender_id, created_at FROM messages WHERE match_id = m.id ORDER BY created_at DESC LIMIT 1) last ON true
        WHERE (m.user_a = $1 OR m.user_b = $1) AND m.ended_at IS NULL
        ORDER BY COALESCE(last.created_at, m.created_at) DESC`,
@@ -86,6 +87,7 @@ export function matchRoutes(db: Db, hub: Hub) {
 
   r.post(
     '/matches/:id/messages',
+    requireVerified(db),
     zValidator('param', uuid),
     zValidator('json', z.object({ body: z.string().trim().min(1).max(2000) })),
     async (c) => {
