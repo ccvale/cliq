@@ -1,0 +1,94 @@
+{
+  "expo": {
+    "name": "Cliq",
+    "slug": "cliq",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "fi.cliq.app",
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Cliq uses Face ID to keep your chats private.",
+        "NSLocationWhenInUseUsageDescription": "Cliq uses your approximate location to find friends near you."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#B06EC8",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "fi.cliq.app",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "USE_BIOMETRIC"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single",
+      "name": "Cliq",
+      "themeColor": "#F7F4EF",
+      "description": "Find your people nearby."
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "asyncRoutes": false
+        }
+      ],
+      "expo-secure-store",
+      "expo-font",
+      "expo-image",
+      "expo-apple-authentication",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Cliq lets you choose a photo for your profile card.",
+          "cameraPermission": "Cliq lets you take a photo for your profile card.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Cliq uses your approximate location to find friends near you."
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Cliq uses Face ID to keep your chats private."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#6C63FF"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F7F4EF",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 120,
+          "dark": {
+            "backgroundColor": "#0E0C11"
+          }
+        }
+      ]
+    ],
+    "scheme": "cliq",
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

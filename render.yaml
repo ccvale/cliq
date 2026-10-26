@@ -1,0 +1,28 @@
+# One-click hosting on Render (render.com → New → Blueprint → pick this repo).
+# Fill in the secrets marked sync: false in the Render dashboard.
+services:
+  - type: web
+    name: cliq-api
+    runtime: docker
+    rootDir: apps/server
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL # Supabase → Project Settings → Database → Connection string (Session pooler)
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: TRUST_PROXY
+        value: "1"
+      - key: CORS_ORIGINS # your web app's URL, e.g. https://cliq.fi
+        sync: false
+      - key: SMTP_URL
+        sync: false
+      - key: MAIL_FROM
+        value: "Cliq <hello@cliq.fi>"
+      - key: APPLE_AUDIENCES
+        value: fi.cliq.app
+      - key: GOOGLE_AUDIENCES
+        sync: false
+      - key: GIPHY_API_KEY
+        sync: false
