@@ -27,5 +27,7 @@ export const config = {
   // Set when the API sits behind exactly one reverse proxy (Render, Fly, Railway) that appends the client IP
   // to X-Forwarded-For. Otherwise the header is ignored, since any client can send it.
   trustProxy: env.TRUST_PROXY === '1',
+  // GIF search in chat. Free key from developers.giphy.com; the GIF button stays hidden without one.
+  giphyApiKey: env.GIPHY_API_KEY || undefined,
   isProd,
 };

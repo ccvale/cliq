@@ -158,4 +158,30 @@ export const migrations: string[] = [
   );
   ALTER TABLE backup_codes ENABLE ROW LEVEL SECURITY;
   `,
+  `
+  ALTER TABLE profiles ADD COLUMN prompts JSONB NOT NULL DEFAULT '[]';
+  ALTER TABLE profiles ADD COLUMN featured JSONB;
+  ALTER TABLE users ADD COLUMN show_online BOOLEAN NOT NULL DEFAULT true;
+
+  CREATE TABLE achievements (
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    badge TEXT NOT NULL,
+    earned_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, badge)
+  );
+  ALTER TABLE achievements ENABLE ROW LEVEL SECURITY;
+
+  ALTER TABLE messages ADD COLUMN kind TEXT NOT NULL DEFAULT 'text' CHECK (kind IN ('text', 'image', 'gif'));
+  ALTER TABLE messages ADD COLUMN media JSONB;
+
+  CREATE TABLE message_media (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    match_id UUID NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+    uploader_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    mime TEXT NOT NULL,
+    data BYTEA NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  ALTER TABLE message_media ENABLE ROW LEVEL SECURITY;
+  `,
 ];

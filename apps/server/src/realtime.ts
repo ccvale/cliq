@@ -6,24 +6,50 @@ export type ServerEvent =
   | { type: 'match:ended'; matchId: string }
   | { type: 'message:new'; message: MessageDto }
   | { type: 'message:read'; matchId: string; readerId: string; at: string }
-  | { type: 'typing'; matchId: string; userId: string };
+  | { type: 'typing'; matchId: string; userId: string }
+  | { type: 'presence'; userId: string; online: boolean; at: string }
+  | { type: 'achievement:new'; badge: string };
 
-export type MessageDto = { id: string; matchId: string; senderId: string; body: string; createdAt: string; readAt: string | null };
+/** Picture messages carry a URL and the size it should be laid out at before it loads. */
+export type MediaDto = { url: string; width: number; height: number };
+
+export type MessageDto = {
+  id: string;
+  matchId: string;
+  senderId: string;
+  kind: 'text' | 'image' | 'gif';
+  body: string;
+  media: MediaDto | null;
+  createdAt: string;
+  readAt: string | null;
+};
 
 /** Tracks live sockets per user. A user can be connected from several devices at once. */
 export class Hub {
   private sockets = new Map<string, Set<WSContext>>();
 
+  /**
+   * Called when a user's first device connects and when their last one disconnects. `force` announces it even
+   * when they hide their status, which is how switching the setting off looks like going offline.
+   */
+  onPresence?: (userId: string, online: boolean, force?: boolean) => void;
+
   add(userId: string, ws: WSContext) {
     let set = this.sockets.get(userId);
-    if (!set) this.sockets.set(userId, (set = new Set()));
+    if (!set) {
+      this.sockets.set(userId, (set = new Set()));
+      this.onPresence?.(userId, true);
+    }
     set.add(ws);
   }
 
   remove(userId: string, ws: WSContext) {
     const set = this.sockets.get(userId);
-    set?.delete(ws);
-    if (set?.size === 0) this.sockets.delete(userId);
+    if (!set?.delete(ws)) return;
+    if (set.size === 0) {
+      this.sockets.delete(userId);
+      this.onPresence?.(userId, false);
+    }
   }
 
   isOnline(userId: string) {

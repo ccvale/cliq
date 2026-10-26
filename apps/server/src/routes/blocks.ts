@@ -6,6 +6,7 @@ import type { Db } from '../db.js';
 import { requireAuth, type AuthEnv } from '../auth/middleware.js';
 import type { Hub } from '../realtime.js';
 import { photoUrl } from './photos.js';
+import { awardLater } from '../lib/achievements.js';
 
 /** Blocks someone: ends any match between you, and neither of you sees the other in Discover again. */
 export async function blockUser(db: Db, hub: Hub, me: string, targetId: string) {
@@ -53,6 +54,7 @@ export function blockRoutes(db: Db, hub: Hub) {
     if (id === c.var.userId) throw new HTTPException(400, { message: 'You can’t block yourself' });
     if (!(await db.one('SELECT 1 FROM users WHERE id = $1', [id]))) throw new HTTPException(404, { message: 'That person is no longer on Cliq' });
     await blockUser(db, hub, c.var.userId, id);
+    awardLater(db, hub, c.var.userId);
     return c.body(null, 204);
   });
 

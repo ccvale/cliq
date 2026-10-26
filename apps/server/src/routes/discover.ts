@@ -9,6 +9,8 @@ import { ageBand, ageOn } from '../lib/age.js';
 import { distanceLabel, distanceMiles } from '../lib/geo.js';
 import { score } from '../lib/scoring.js';
 import { sendPush, type Hub } from '../realtime.js';
+import { BADGES_SQL, awardLater } from '../lib/achievements.js';
+import type { FeaturedDto } from './search.js';
 
 export type CardDto = {
   id: string;
@@ -23,6 +25,9 @@ export type CardDto = {
   city: string;
   distance: string;
   photoUrl: string | null;
+  prompts: { id: string; answer: string }[];
+  featured: FeaturedDto | null;
+  badges: string[];
 };
 
 export function discoverRoutes(db: Db, hub: Hub) {
@@ -44,7 +49,7 @@ export function discoverRoutes(db: Db, hub: Hub) {
     const latSpan = me.max_distance_mi / 69;
     const lngSpan = me.max_distance_mi / (69 * Math.max(0.1, Math.cos((me.lat * Math.PI) / 180)));
     const candidates = await db.query(
-      `SELECT p.*, ph.updated_at AS photo_at, EXISTS (SELECT 1 FROM swipes s WHERE s.swiper_id = p.user_id AND s.target_id = $1 AND s.liked) AS liked_you
+      `SELECT p.*, ph.updated_at AS photo_at, ${BADGES_SQL}, EXISTS (SELECT 1 FROM swipes s WHERE s.swiper_id = p.user_id AND s.target_id = $1 AND s.liked) AS liked_you
        FROM profiles p
        LEFT JOIN photos ph ON ph.user_id = p.user_id
        WHERE p.onboarded AND p.user_id <> $1
@@ -126,6 +131,8 @@ export function discoverRoutes(db: Db, hub: Hub) {
         });
       }
     }
+    if (match) awardLater(db, hub, me, targetId);
+    else awardLater(db, hub, me);
     return c.json({ matchId: match?.id ?? null });
   });
 
@@ -163,5 +170,8 @@ export function toCard(p: Row, age: number, miles: number, shared: string[]): Ca
     city: p.city,
     distance: distanceLabel(miles),
     photoUrl: photoUrl(p.user_id, p.photo_at),
+    prompts: p.prompts ?? [],
+    featured: p.featured ?? null,
+    badges: p.badges ?? [],
   };
 }

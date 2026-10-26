@@ -4,7 +4,10 @@ import { validate as zValidator } from '../lib/validate.js';
 import { z } from 'zod';
 import type { Db, Row } from '../db.js';
 import { requireAuth, type AuthEnv } from '../auth/middleware.js';
-import { GENDERS, INTERESTS, PALETTE_IDS } from '../lib/catalog.js';
+import { FEATURED_KINDS, GENDERS, INTERESTS, PALETTE_IDS, PROMPT_IDS } from '../lib/catalog.js';
+import { BADGES_SQL, BADGE_IDS, awardLater, checkAchievements } from '../lib/achievements.js';
+import { ARTWORK_HOST, type FeaturedDto } from './search.js';
+import type { Hub } from '../realtime.js';
 import { ageOn, bandBounds } from '../lib/age.js';
 import { coarsen } from '../lib/geo.js';
 import { photoUrl } from './photos.js';
@@ -29,6 +32,9 @@ export const toProfile = (p: Row) => ({
   maxDistanceMi: p.max_distance_mi as number,
   onboarded: p.onboarded as boolean,
   photoUrl: photoUrl(p.user_id, p.photo_at),
+  prompts: (p.prompts ?? []) as { id: string; answer: string }[],
+  featured: (p.featured ?? null) as FeaturedDto | null,
+  badges: (p.badges ?? []) as string[],
 });
 
 const profilePatch = z
@@ -45,21 +51,34 @@ const profilePatch = z
     ageMin: z.number().int().min(13).max(120),
     ageMax: z.number().int().min(13).max(120),
     maxDistanceMi: z.number().int().min(1).max(150),
+    prompts: z
+      .array(z.object({ id: z.enum(PROMPT_IDS), answer: z.string().trim().min(1, 'Answer the prompt or remove it').max(150) }))
+      .max(3)
+      .refine((a) => new Set(a.map((p) => p.id)).size === a.length, 'Each prompt can only be used once'),
+    featured: z
+      .object({
+        kind: z.enum(FEATURED_KINDS),
+        title: z.string().trim().min(1).max(80),
+        subtitle: z.string().trim().max(80).default(''),
+        artworkUrl: z.string().url().regex(ARTWORK_HOST, 'Pick artwork from search').nullable().default(null),
+        year: z.number().int().min(1800).max(2100).nullable().default(null),
+      })
+      .nullable(),
   })
   .partial();
 
-export function meRoutes(db: Db) {
+export function meRoutes(db: Db, hub: Hub) {
   const r = new Hono<AuthEnv>();
   r.use('*', requireAuth);
 
   const load = (userId: string) =>
     db.one(
-      'SELECT p.*, ph.updated_at AS photo_at FROM profiles p LEFT JOIN photos ph ON ph.user_id = p.user_id WHERE p.user_id = $1',
+      `SELECT p.*, ph.updated_at AS photo_at, ${BADGES_SQL} FROM profiles p LEFT JOIN photos ph ON ph.user_id = p.user_id WHERE p.user_id = $1`,
       [userId],
     );
 
   r.get('/', async (c) => {
-    const user = await db.one('SELECT id, email, password_hash IS NOT NULL AS has_password, apple_sub IS NOT NULL AS apple, google_sub IS NOT NULL AS google, email_verified_at IS NOT NULL AS verified, notify_matches, notify_messages, totp_enabled_at IS NOT NULL AS mfa FROM users WHERE id = $1', [
+    const user = await db.one('SELECT id, email, password_hash IS NOT NULL AS has_password, apple_sub IS NOT NULL AS apple, google_sub IS NOT NULL AS google, email_verified_at IS NOT NULL AS verified, notify_matches, notify_messages, totp_enabled_at IS NOT NULL AS mfa, show_online FROM users WHERE id = $1', [
       c.var.userId,
     ]);
     if (!user) throw new HTTPException(401, { message: 'Account no longer exists' });
@@ -71,11 +90,14 @@ export function meRoutes(db: Db) {
         (SELECT count(*)::int FROM matches WHERE (user_a = $1 OR user_b = $1)) AS matches`,
       [c.var.userId],
     );
+    // Catches badges earned in ways that don't go through a route that checks, such as confirming an email.
+    await checkAchievements(db, hub, c.var.userId);
     const profile = (await load(c.var.userId))!;
     return c.json({
       settings: {
         notifyMatches: user.notify_matches,
         notifyMessages: user.notify_messages,
+        showOnline: user.show_online,
         snoozedUntil: profile.snoozed_until && new Date(profile.snoozed_until) > new Date() ? new Date(profile.snoozed_until).toISOString() : null,
       },
       id: user.id,
@@ -120,6 +142,8 @@ export function meRoutes(db: Db) {
     if (body.maxDistanceMi !== undefined) next.max_distance_mi = body.maxDistanceMi;
     if (body.ageMin !== undefined) next.age_min = body.ageMin;
     if (body.ageMax !== undefined) next.age_max = body.ageMax;
+    if (body.prompts !== undefined) next.prompts = body.prompts;
+    if (body.featured !== undefined) next.featured = body.featured;
 
     // Age preferences always stay inside the user's own band.
     if (next.birthday) {
@@ -134,13 +158,17 @@ export function meRoutes(db: Db) {
 
     const saved = await db.one(
       `UPDATE profiles SET display_name=$2, bio=$3, birthday=$4, gender=$5, gig_title=$6, gig_place=$7, interests=$8,
-        palette=$9, lat=$10, lng=$11, city=$12, age_min=$13, age_max=$14, max_distance_mi=$15, onboarded=$16, updated_at=now()
-       WHERE user_id=$1 RETURNING *, (SELECT updated_at FROM photos WHERE user_id = $1) AS photo_at`,
+        palette=$9, lat=$10, lng=$11, city=$12, age_min=$13, age_max=$14, max_distance_mi=$15, onboarded=$16,
+        prompts=$17, featured=$18, updated_at=now()
+       WHERE user_id=$1 RETURNING *, (SELECT updated_at FROM photos WHERE user_id = $1) AS photo_at,
+         (SELECT coalesce(array_agg(badge ORDER BY earned_at), '{}') FROM achievements WHERE user_id = $1) AS badges`,
       [
         c.var.userId, next.display_name, next.bio, next.birthday, next.gender, next.gig_title, next.gig_place,
         next.interests, next.palette, next.lat, next.lng, next.city, next.age_min, next.age_max, next.max_distance_mi, next.onboarded,
+        JSON.stringify(next.prompts ?? []), next.featured == null ? null : JSON.stringify(next.featured),
       ],
     );
+    if (body.prompts !== undefined || body.featured !== undefined || body.bio !== undefined) awardLater(db, hub, c.var.userId);
     return c.json(toProfile(saved!));
   });
 
@@ -166,6 +194,7 @@ export function meRoutes(db: Db) {
         .object({
           notifyMatches: z.boolean(),
           notifyMessages: z.boolean(),
+          showOnline: z.boolean(),
           // Days to stay hidden from Discover; 0 shows you again. 3650 is "until I turn it off".
           snoozeDays: z.number().int().min(0).max(3650),
         })
@@ -179,6 +208,11 @@ export function meRoutes(db: Db) {
           [c.var.userId, body.notifyMatches ?? null, body.notifyMessages ?? null],
         );
       }
+      if (body.showOnline !== undefined) {
+        await db.query('UPDATE users SET show_online = $2 WHERE id = $1', [c.var.userId, body.showOnline]);
+        // Going invisible while connected should look like going offline to friends.
+        if (hub.isOnline(c.var.userId)) hub.onPresence?.(c.var.userId, body.showOnline, true);
+      }
       if (body.snoozeDays !== undefined) {
         await db.query(
           `UPDATE profiles SET snoozed_until = CASE WHEN $2::int = 0 THEN NULL ELSE now() + make_interval(days => $2::int) END WHERE user_id = $1`,
@@ -188,6 +222,14 @@ export function meRoutes(db: Db) {
       return c.body(null, 204);
     },
   );
+
+  /** Every badge with when (or whether) you earned it, in catalog order. */
+  r.get('/achievements', async (c) => {
+    await checkAchievements(db, hub, c.var.userId);
+    const rows = await db.query<{ badge: string; earned_at: string }>('SELECT badge, earned_at FROM achievements WHERE user_id = $1', [c.var.userId]);
+    const earned = new Map(rows.map((r) => [r.badge, new Date(r.earned_at).toISOString()]));
+    return c.json({ achievements: BADGE_IDS.map((id) => ({ id, earnedAt: earned.get(id) ?? null })) });
+  });
 
   // Two-step verification. Setup stores a pending secret; it only takes effect once a code from the app checks out.
   r.post('/2fa/setup', async (c) => {

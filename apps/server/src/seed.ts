@@ -38,6 +38,18 @@ const people: Person[] = [
   { name: 'Hana', age: 22, title: 'Student', place: 'Ramapo College', bio: 'Snowboarding in winter, surfing in summer, complaining about both.', interests: ['Snowboarding', 'Surfing', 'Photography', 'Travel'], palette: ['sky', 'lagoon'], city: 'Mahwah, NJ' },
 ];
 
+// Prompt answers and a featured pick for some of the demo people, so cards show off the newer profile pieces.
+const extras: Record<string, { prompts: { id: string; answer: string }[]; featured?: { kind: string; title: string; subtitle: string } }> = {
+  Chris: { prompts: [{ id: 'talk-for-hours', answer: 'Why the 2024 version of this app had a sidebar' }], featured: { kind: 'movie', title: 'Spider-Man: Into the Spider-Verse', subtitle: 'Animation' } },
+  Maya: { prompts: [{ id: 'perfect-saturday', answer: 'Sunrise hike, then a long brunch with zero plans after' }, { id: 'teach-you', answer: 'Pour a latte heart (results not guaranteed)' }], featured: { kind: 'song', title: 'Holocene', subtitle: 'Bon Iver' } },
+  Jordan: { prompts: [{ id: 'hot-take', answer: 'Monopoly is a bad game and I will die on this hill' }], featured: { kind: 'show', title: 'The Bear', subtitle: 'Comedy' } },
+  Theo: { prompts: [{ id: 'comfort-food', answer: 'Midnight grilled cheese, extra butter' }, { id: 'looking-for', answer: 'Catch a show at the Capitol Theatre' }], featured: { kind: 'song', title: 'Ivy', subtitle: 'Frank Ocean' } },
+  Riley: { prompts: [{ id: 'first-hang', answer: 'Trivia night. I carry the anime category' }], featured: { kind: 'show', title: 'Frieren: Beyond Journey’s End', subtitle: 'Anime' } },
+  Priya: { prompts: [{ id: 'green-flag', answer: 'Texts back “omw” and is actually on the way' }] },
+  Diego: { prompts: [{ id: 'last-obsession', answer: 'Fantasy football spreadsheets' }], featured: { kind: 'movie', title: 'Past Lives', subtitle: 'Drama' } },
+  Ava: { prompts: [{ id: 'talk-for-hours', answer: 'Wes Anderson color palettes' }], featured: { kind: 'movie', title: 'The Grand Budapest Hotel', subtitle: 'Comedy' } },
+};
+
 const birthdayFor = (age: number, i: number) => {
   const d = new Date();
   d.setUTCFullYear(d.getUTCFullYear() - age, d.getUTCMonth() - 1 - (i % 10), 1);
@@ -58,6 +70,14 @@ export async function seed(db: Db, center = { lat: 41.09, lng: -74.15 }) {
        VALUES ($1,$2,$3,$4,'unspecified',$5,$6,$7,$8,$9,$10,$11,18,40,40,true)`,
       [u!.id, p.name, p.bio, birthdayFor(p.age, i), p.title, p.place, p.interests, p.palette, lat, lng, p.city],
     );
+    const extra = extras[p.name];
+    if (extra) {
+      await db.query('UPDATE profiles SET prompts = $2, featured = $3 WHERE user_id = $1', [
+        u!.id,
+        JSON.stringify(extra.prompts),
+        extra.featured ? JSON.stringify({ ...extra.featured, artworkUrl: null, year: null }) : null,
+      ]);
+    }
     return u!.id;
   };
 

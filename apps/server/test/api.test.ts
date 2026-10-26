@@ -388,3 +388,115 @@ describe('routing', () => {
     expect((await call('GET', '/health')).status).toBe(200);
   });
 });
+
+describe('profile extras, badges and chat media', () => {
+  const person = async (email: string) => {
+    const s = (await call('POST', '/auth/signup', { email, password: 'a-strong-pass-1' })).json;
+    await db.query('UPDATE users SET email_verified_at = now() WHERE lower(email) = $1', [email]);
+    await call('PATCH', '/me/profile', {
+      displayName: email.split('@')[0], birthday: '1997-07-07', interests: ['Film'],
+      location: { lat: 41.09, lng: -74.15, city: 'Mahwah, NJ' },
+    }, s.accessToken);
+    const me = (await call('GET', '/me', undefined, s.accessToken)).json;
+    return { token: s.accessToken as string, id: me.id as string };
+  };
+  const befriend = async (a: { token: string; id: string }, b: { token: string; id: string }) => {
+    await call('POST', '/swipes', { targetId: b.id, liked: true }, a.token);
+    return (await call('POST', '/swipes', { targetId: a.id, liked: true }, b.token)).json.matchId as string;
+  };
+  // Badges are awarded in the background after a request; give it a moment.
+  const settle = () => new Promise((r) => setTimeout(r, 100));
+
+  it('saves prompts and a featured pick and shows them on cards', async () => {
+    const a = await person('prompts-a@x.com');
+    const b = await person('prompts-b@x.com');
+    const bad = await call('PATCH', '/me/profile', { prompts: [{ id: 'made-up', answer: 'hi' }] }, a.token);
+    expect(bad.status).toBe(400);
+    const dupe = await call('PATCH', '/me/profile', { prompts: [{ id: 'hot-take', answer: 'a' }, { id: 'hot-take', answer: 'b' }] }, a.token);
+    expect(dupe.status).toBe(400);
+    const tracker = await call('PATCH', '/me/profile', { featured: { kind: 'song', title: 'x', artworkUrl: 'https://evil.example/pixel.png' } }, a.token);
+    expect(tracker.status).toBe(400);
+
+    const saved = await call('PATCH', '/me/profile', {
+      prompts: [{ id: 'hot-take', answer: '  Pineapple belongs on pizza ' }],
+      featured: { kind: 'movie', title: 'Past Lives', subtitle: 'Drama', year: 2023 },
+    }, a.token);
+    expect(saved.status).toBe(200);
+    expect(saved.json.prompts).toEqual([{ id: 'hot-take', answer: 'Pineapple belongs on pizza' }]);
+    expect(saved.json.featured).toEqual({ kind: 'movie', title: 'Past Lives', subtitle: 'Drama', artworkUrl: null, year: 2023 });
+
+    const card = (await call('GET', '/discover?limit=50', undefined, b.token)).json.cards.find((c: any) => c.id === a.id);
+    expect(card.prompts[0].answer).toBe('Pineapple belongs on pizza');
+    expect(card.featured.title).toBe('Past Lives');
+
+    expect((await call('PATCH', '/me/profile', { featured: null }, a.token)).json.featured).toBeNull();
+  });
+
+  it('awards badges for a first match and first message and lists them', async () => {
+    const a = await person('badges-a@x.com');
+    const b = await person('badges-b@x.com');
+    const before = (await call('GET', '/me/achievements', undefined, a.token)).json.achievements;
+    expect(before.find((x: any) => x.id === 'verified').earnedAt).toBeTruthy();
+    expect(before.find((x: any) => x.id === 'first-match').earnedAt).toBeNull();
+
+    const matchId = await befriend(a, b);
+    await call('POST', `/matches/${matchId}/messages`, { body: 'hey!' }, a.token);
+    await settle();
+    const me = (await call('GET', '/me', undefined, a.token)).json;
+    expect(me.profile.badges).toEqual(expect.arrayContaining(['verified', 'first-match', 'first-message']));
+    // Friends see them on the card in the friends list.
+    const { matches } = (await call('GET', '/matches', undefined, b.token)).json;
+    expect(matches.find((m: any) => m.id === matchId).person.badges).toContain('first-message');
+  });
+
+  it('sends GIFs only from GIPHY and pictures only as real images', async () => {
+    const a = await person('media-a@x.com');
+    const b = await person('media-b@x.com');
+    const matchId = await befriend(a, b);
+
+    const evil = await call('POST', `/matches/${matchId}/messages`, { gif: { url: 'https://evil.example/a.gif', width: 200, height: 150 } }, a.token);
+    expect(evil.status).toBe(400);
+    const gif = await call('POST', `/matches/${matchId}/messages`, { gif: { url: 'https://media2.giphy.com/media/abc/200w.gif', width: 200, height: 150 } }, a.token);
+    expect(gif.status).toBe(201);
+    expect(gif.json).toMatchObject({ kind: 'gif', body: '', media: { width: 200, height: 150 } });
+
+    const upload = (body: Uint8Array) =>
+      app.request(`/matches/${matchId}/images?w=640&h=480`, { method: 'POST', headers: { authorization: `Bearer ${a.token}` }, body: body.slice().buffer });
+    expect((await upload(new TextEncoder().encode('<script>'))).status).toBe(415);
+    const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4]);
+    const res = await upload(jpeg);
+    expect(res.status).toBe(201);
+    const message = await res.json();
+    expect(message).toMatchObject({ kind: 'image', media: { width: 640, height: 480 } });
+    expect(message.media.url).toMatch(/^\/media\/[0-9a-f-]+$/);
+
+    const img = await app.request(message.media.url);
+    expect(img.headers.get('content-type')).toBe('image/jpeg');
+    expect(new Uint8Array(await img.arrayBuffer())).toEqual(jpeg);
+    const list = (await call('GET', '/matches', undefined, b.token)).json.matches;
+    expect(list.find((m: any) => m.id === matchId).lastMessage.body).toBe('📷 Photo');
+
+    // Unmatching takes the pictures with it.
+    await call('DELETE', `/matches/${matchId}`, undefined, a.token);
+    expect((await app.request(message.media.url)).status).toBe(404);
+  });
+
+  it('reports online status only for people who share it', async () => {
+    const a = await person('online-a@x.com');
+    const b = await person('online-b@x.com');
+    const matchId = await befriend(a, b);
+    const seen = async () => (await call('GET', '/matches', undefined, b.token)).json.matches.find((m: any) => m.id === matchId);
+    expect((await seen()).lastActiveAt).toBeTruthy();
+    expect((await seen()).online).toBe(false);
+    expect((await call('PATCH', '/me/settings', { showOnline: false }, a.token)).status).toBe(204);
+    expect((await call('GET', '/me', undefined, a.token)).json.settings.showOnline).toBe(false);
+    expect((await seen()).lastActiveAt).toBeNull();
+  });
+
+  it('keeps GIF search off until a key is set', async () => {
+    const a = await person('gifs@x.com');
+    expect((await call('GET', '/search/gifs/enabled', undefined, a.token)).json.enabled).toBe(false);
+    expect((await call('GET', '/search/gifs?q=cat', undefined, a.token)).status).toBe(404);
+    expect((await call('GET', '/search/featured?kind=song&q=x')).status).toBe(401);
+  });
+});
