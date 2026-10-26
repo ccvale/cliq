@@ -19,7 +19,8 @@ export const config = {
   accessTokenTtlSeconds: 15 * 60,
   refreshTokenTtlDays: 30,
   corsOrigins: list(env.CORS_ORIGINS ?? 'http://localhost:8081,http://localhost:19006'),
-  appleAudiences: list(env.APPLE_AUDIENCES),
+  // In development, also accept tokens minted for Expo Go (host.exp.Exponent) so Sign in with Apple works there.
+  appleAudiences: env.APPLE_AUDIENCES ? list(env.APPLE_AUDIENCES) : isProd ? [] : ['fi.cliq.app', 'host.exp.Exponent'],
   googleAudiences: list(env.GOOGLE_AUDIENCES),
   smtpUrl: env.SMTP_URL || undefined,
   mailFrom: env.MAIL_FROM ?? 'Cliq <hello@cliq.fi>',
