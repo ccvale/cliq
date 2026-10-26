@@ -227,6 +227,101 @@ describe('photos', () => {
   });
 });
 
+describe('safety and settings', () => {
+  const fresh = async (email: string, extra: object = {}) => {
+    const s = (await call('POST', '/auth/signup', { email, password: 'a-strong-pass-1' })).json;
+    await db.query('UPDATE users SET email_verified_at = now() WHERE lower(email) = $1', [email]);
+    await call('PATCH', '/me/profile', {
+      displayName: email.split('@')[0], birthday: '1998-03-03', interests: ['Coffee'],
+      location: { lat: 41.09, lng: -74.15, city: 'Mahwah, NJ' }, ...extra,
+    }, s.accessToken);
+    const me = (await call('GET', '/me', undefined, s.accessToken)).json;
+    return { token: s.accessToken as string, refresh: s.refreshToken as string, id: me.id as string };
+  };
+  const sees = async (token: string, id: string) =>
+    (await call('GET', '/discover?limit=50', undefined, token)).json.cards.some((c: any) => c.id === id);
+
+  it('blocks and unblocks without reporting', async () => {
+    const a = await fresh('block-a@x.com');
+    const b = await fresh('block-b@x.com');
+    expect(await sees(a.token, b.id)).toBe(true);
+    expect((await call('POST', `/blocks/${b.id}`, undefined, a.token)).status).toBe(204);
+    expect(await sees(a.token, b.id)).toBe(false);
+    expect(await sees(b.token, a.id)).toBe(false);
+    expect((await call('POST', '/swipes', { targetId: a.id, liked: true }, b.token)).status).toBe(404);
+    const list = (await call('GET', '/blocks', undefined, a.token)).json.blocks;
+    expect(list.map((x: any) => x.id)).toEqual([b.id]);
+    expect((await call('DELETE', `/blocks/${b.id}`, undefined, a.token)).status).toBe(204);
+    expect(await sees(a.token, b.id)).toBe(true);
+  });
+
+  it('snoozes a profile out of Discover and back', async () => {
+    const a = await fresh('snooze-a@x.com');
+    const b = await fresh('snooze-b@x.com');
+    expect((await call('PATCH', '/me/settings', { snoozeDays: 7 }, b.token)).status).toBe(204);
+    expect((await call('GET', '/me', undefined, b.token)).json.settings.snoozedUntil).toBeTruthy();
+    expect(await sees(a.token, b.id)).toBe(false);
+    await call('PATCH', '/me/settings', { snoozeDays: 0 }, b.token);
+    expect(await sees(a.token, b.id)).toBe(true);
+  });
+
+  it('saves notification preferences', async () => {
+    const a = await fresh('notify@x.com');
+    await call('PATCH', '/me/settings', { notifyMessages: false }, a.token);
+    const settings = (await call('GET', '/me', undefined, a.token)).json.settings;
+    expect(settings).toMatchObject({ notifyMatches: true, notifyMessages: false });
+  });
+
+  it('hides a profile reported by three different people', async () => {
+    const target = await fresh('reported@x.com');
+    const watcher = await fresh('watcher@x.com');
+    for (const n of [1, 2, 3]) {
+      const r = await fresh(`reporter${n}@x.com`);
+      await call('POST', '/reports', { targetId: target.id, reason: 'spam' }, r.token);
+    }
+    expect(await sees(watcher.token, target.id)).toBe(false);
+  });
+
+  it('lists devices and signs one out immediately', async () => {
+    const a = await fresh('devices@x.com');
+    const phone = (await call('POST', '/auth/signin', { email: 'devices@x.com', password: 'a-strong-pass-1' })).json;
+    const { sessions } = (await call('GET', '/me/sessions', undefined, a.token)).json;
+    expect(sessions).toHaveLength(2);
+    const other = sessions.find((s: any) => !s.current);
+    expect((await call('DELETE', `/me/sessions/${other.id}`, undefined, a.token)).status).toBe(204);
+    // The access token stops working right away, not after it expires.
+    expect((await call('GET', '/me', undefined, phone.accessToken)).status).toBe(401);
+    expect((await call('GET', '/me', undefined, a.token)).status).toBe(200);
+  });
+
+  it('undoes the last swipe unless it made a match', async () => {
+    const a = await fresh('undo-a@x.com');
+    const b = await fresh('undo-b@x.com');
+    await call('POST', '/swipes', { targetId: b.id, liked: false }, a.token);
+    expect(await sees(a.token, b.id)).toBe(false);
+    expect((await call('POST', '/swipes/undo', undefined, a.token)).json.targetId).toBe(b.id);
+    expect(await sees(a.token, b.id)).toBe(true);
+    await call('POST', '/swipes', { targetId: a.id, liked: true }, b.token);
+    expect((await call('POST', '/swipes', { targetId: b.id, liked: true }, a.token)).json.matchId).toBeTruthy();
+    expect((await call('POST', '/swipes/undo', undefined, a.token)).status).toBe(409);
+  });
+
+  it('exports my data', async () => {
+    const s = (await call('POST', '/auth/signin', { email: 'ava@demo.cliq.app', password: DEMO_PASSWORD })).json;
+    const data = (await call('GET', '/me/export', undefined, s.accessToken)).json;
+    expect(data.account.email).toBe('ava@demo.cliq.app');
+    expect(data.profile.displayName).toBe('Ava');
+    expect(data.matches.length).toBeGreaterThan(0);
+  });
+
+  it('asks for the password before deleting an account', async () => {
+    const a = await fresh('delete-me@x.com');
+    expect((await call('DELETE', '/auth/account', { password: 'wrong-password-9' }, a.token)).status).toBe(403);
+    expect((await call('DELETE', '/auth/account', { password: 'a-strong-pass-1' }, a.token)).status).toBe(204);
+    expect((await call('POST', '/auth/signin', { email: 'delete-me@x.com', password: 'a-strong-pass-1' })).status).toBe(401);
+  });
+});
+
 describe('routing', () => {
   it('leaves public paths open', async () => {
     expect((await call('GET', '/health')).status).toBe(200);

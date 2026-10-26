@@ -21,3 +21,12 @@ export function dayLabel(iso: string) {
   if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
   return d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 }
+
+/** "just now", "5 minutes ago", "3 hours ago", "2 days ago" */
+export function timeAgo(iso: string, now = Date.now()) {
+  const diff = Math.max(0, now - new Date(iso).getTime());
+  if (diff < 60_000) return 'just now';
+  const [n, unit] =
+    diff < 3_600_000 ? [Math.floor(diff / 60_000), 'minute'] : diff < DAY ? [Math.floor(diff / 3_600_000), 'hour'] : [Math.floor(diff / DAY), 'day'];
+  return `${n} ${unit}${n === 1 ? '' : 's'} ago`;
+}

@@ -2,7 +2,7 @@
  * In-browser stand-in for the Cliq API, used when EXPO_PUBLIC_DEMO=1. It lets the web build run as a
  * self-contained demo with seeded people, mutual likes and friends who write back.
  */
-import type { Card, MatchSummary, Me, Message, Profile, ProfilePatch, ServerEvent } from './types';
+import type { BlockedPerson, Card, MatchSummary, Me, Message, Profile, ProfilePatch, ServerEvent, Settings } from './types';
 
 type Person = Omit<Card, 'sharedInterests' | 'distance' | 'photoUrl'> & { miles: number; likesYou: boolean; replies: string[] };
 
@@ -42,6 +42,9 @@ const state = {
   profile: blankProfile(),
   email: '',
   verified: true,
+  settings: { notifyMatches: true, notifyMessages: true, snoozedUntil: null } as Settings,
+  blocked: [] as BlockedPerson[],
+  lastSwipe: null as string | null,
   swiped: new Set<string>(),
   liked: 0,
   matches: [] as { id: string; person: Person; matchedAt: string; replyIndex: number }[],
@@ -55,6 +58,9 @@ function reset(profile: Profile, email: string, verified = true) {
   state.profile = profile;
   state.email = email;
   state.verified = verified;
+  state.settings = { notifyMatches: true, notifyMessages: true, snoozedUntil: null };
+  state.blocked = [];
+  state.lastSwipe = null;
   state.swiped = new Set();
   state.liked = 0;
   state.matches = [{ id: 'm-ava', person: ava, matchedAt: ago(60 * 26), replyIndex: 0 }];
@@ -169,7 +175,7 @@ export const demoApi = {
   async changePassword() {
     await wait();
   },
-  async deleteAccount() {},
+  async deleteAccount(_password?: string) {},
 
   async me(): Promise<Me> {
     return {
@@ -179,6 +185,7 @@ export const demoApi = {
       linkedApple: false,
       linkedGoogle: false,
       emailVerified: state.verified,
+      settings: { ...state.settings },
       profile: { ...state.profile },
       stats: { likesSent: state.liked, swipes: state.swiped.size, matches: state.matches.length },
     };
@@ -204,6 +211,49 @@ export const demoApi = {
     return { ...p };
   },
   async registerPushToken() {},
+  async updateSettings(patch: { notifyMatches?: boolean; notifyMessages?: boolean; snoozeDays?: number }) {
+    const { snoozeDays, ...rest } = patch;
+    Object.assign(state.settings, rest);
+    if (snoozeDays !== undefined) {
+      state.settings.snoozedUntil = snoozeDays ? new Date(Date.now() + snoozeDays * 86_400_000).toISOString() : null;
+    }
+  },
+  async devices() {
+    const now = new Date().toISOString();
+    return {
+      sessions: [
+        { id: 'this', device: 'This browser', signedInAt: ago(5), lastSeenAt: now, current: true },
+        { id: 'phone', device: 'iPhone · Cliq app', signedInAt: ago(60 * 24 * 3), lastSeenAt: ago(90), current: false },
+      ],
+    };
+  },
+  async signOutDevice(_id: string) {
+    await wait();
+  },
+  async exportData() {
+    return { exportedAt: new Date().toISOString(), account: { email: state.email }, profile: state.profile, matches: state.matches.length };
+  },
+  async blocked() {
+    return { blocks: [...state.blocked] };
+  },
+  async block(id: string) {
+    const m = state.matches.find((x) => x.person.id === id);
+    const person = m?.person ?? people.find((x) => x.id === id);
+    if (person) state.blocked.unshift({ id, displayName: person.displayName, palette: person.palette, photoUrl: null, blockedAt: new Date().toISOString() });
+    if (m) await demoApi.unmatch(m.id);
+  },
+  async unblock(id: string) {
+    state.blocked = state.blocked.filter((b) => b.id !== id);
+  },
+  async undoSwipe() {
+    await wait(150);
+    const id = state.lastSwipe;
+    if (!id) throw fail('Nothing to undo');
+    if (state.matches.some((m) => m.person.id === id)) throw fail('You already clicked with them, so that one stays');
+    state.swiped.delete(id);
+    state.lastSwipe = null;
+    return { targetId: id };
+  },
 
   async discover() {
     await wait(300);
@@ -211,7 +261,7 @@ export const demoApi = {
     if (!p.onboarded) return { cards: [], reason: 'finish-profile' };
     // The demo people are all adults, so a teen profile sees an empty queue, just like the real API.
     const cards = people
-      .filter((x) => !state.swiped.has(x.id) && (p.age ?? 18) >= 18 && x.age >= p.ageMin && x.age <= p.ageMax && x.miles <= p.maxDistanceMi)
+      .filter((x) => !state.swiped.has(x.id) && !state.blocked.some((b) => b.id === x.id) && (p.age ?? 18) >= 18 && x.age >= p.ageMin && x.age <= p.ageMax && x.miles <= p.maxDistanceMi)
       .sort((a, b) => scoreOf(b) - scoreOf(a))
       .map(toCard);
     return { cards };
@@ -220,6 +270,7 @@ export const demoApi = {
     await wait(150);
     if (!state.verified) throw Object.assign(fail('Confirm your email first'), { status: 403, code: 'verify-email' });
     state.swiped.add(targetId);
+    state.lastSwipe = targetId;
     if (!liked) return { matchId: null };
     state.liked++;
     const person = people.find((x) => x.id === targetId);
@@ -253,7 +304,6 @@ export const demoApi = {
     emit({ type: 'match:ended', matchId });
   },
   async report(targetId: string, _reason: string) {
-    const m = state.matches.find((x) => x.person.id === targetId);
-    if (m) await demoApi.unmatch(m.id);
+    await demoApi.block(targetId);
   },
 };

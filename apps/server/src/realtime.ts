@@ -42,18 +42,23 @@ export class Hub {
   }
 }
 
-type Push = { title: string; body: string; data?: Record<string, unknown> };
+type Push = { title: string; body: string; data?: Record<string, unknown>; kind: 'match' | 'message' };
 
 /** Sends Expo push notifications to every device the user registered. Failures are logged, never thrown. */
 export async function sendPush(db: Db, userId: string, push: Push) {
   if (process.env.DISABLE_PUSH === '1') return;
+  const prefs = await db.one<{ notify_matches: boolean; notify_messages: boolean }>(
+    'SELECT notify_matches, notify_messages FROM users WHERE id = $1',
+    [userId],
+  );
+  if (!prefs || !(push.kind === 'match' ? prefs.notify_matches : prefs.notify_messages)) return;
   const tokens = await db.query<{ token: string }>('SELECT token FROM push_tokens WHERE user_id = $1', [userId]);
   if (!tokens.length) return;
   try {
     const res = await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',
       headers: { 'content-type': 'application/json', accept: 'application/json' },
-      body: JSON.stringify(tokens.map(({ token }) => ({ to: token, sound: 'default', ...push }))),
+      body: JSON.stringify(tokens.map(({ token }) => ({ to: token, sound: 'default', title: push.title, body: push.body, data: push.data }))),
     });
     const json: any = await res.json().catch(() => ({}));
     // Drop tokens Expo reports as no longer registered so we stop sending to uninstalled apps.

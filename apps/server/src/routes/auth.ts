@@ -6,7 +6,7 @@ import type { Db } from '../db.js';
 import { dummyVerify, hashPassword, verifyPassword } from '../auth/password.js';
 import { createSession, revokeFamily, rotateSession, RefreshError } from '../auth/tokens.js';
 import { verifyAppleToken, verifyGoogleToken, type ExternalIdentity } from '../auth/oauth.js';
-import { rateLimit, requireAuth, type AuthEnv } from '../auth/middleware.js';
+import { createLimiter, rateLimit, requireAuth, type AuthEnv } from '../auth/middleware.js';
 import { CodeError, consumeCode, issueCode } from '../auth/codes.js';
 import { codeEmail, sendMail } from '../lib/mailer.js';
 
@@ -21,6 +21,8 @@ export function authRoutes(db: Db) {
   const r = new Hono<AuthEnv>();
   const ua = (c: { req: { header: (k: string) => string | undefined } }) => c.req.header('user-agent') ?? '';
   const limited = rateLimit({ limit: 10, windowMs: 60_000 });
+  // Per account as well as per address, so spreading guesses across many IPs doesn't help.
+  const perEmail = createLimiter({ limit: 10, windowMs: 15 * 60_000, message: 'Too many attempts for this account. Try again in 15 minutes.' });
 
   const codeErrors = <T>(p: Promise<T>) =>
     p.catch((err) => {
@@ -52,6 +54,7 @@ export function authRoutes(db: Db) {
 
   r.post('/signin', limited, zValidator('json', z.object({ email, password: z.string().max(200) })), async (c) => {
     const body = c.req.valid('json');
+    perEmail.hit(`signin:${body.email}`);
     const user = await db.one<{ id: string; password_hash: string | null }>(
       'SELECT id, password_hash FROM users WHERE lower(email) = $1',
       [body.email],
@@ -162,6 +165,7 @@ export function authRoutes(db: Db) {
 
   r.post('/password/forgot', limited, zValidator('json', z.object({ email })), async (c) => {
     const { email: address } = c.req.valid('json');
+    perEmail.hit(`forgot:${address}`);
     const user = await db.one<{ id: string }>('SELECT id FROM users WHERE lower(email) = $1', [address]);
     // Same answer whether or not the account exists, so this can't be used to discover who has signed up.
     if (user) await sendCode(user.id, address, 'reset').catch((err) => {
@@ -176,6 +180,7 @@ export function authRoutes(db: Db) {
     zValidator('json', z.object({ email, code: z.string().trim().max(10), password })),
     async (c) => {
       const body = c.req.valid('json');
+      perEmail.hit(`reset:${body.email}`);
       const user = await db.one<{ id: string }>('SELECT id FROM users WHERE lower(email) = $1', [body.email]);
       if (!user) throw new HTTPException(400, { message: 'That code has expired. Request a new one.' });
       await codeErrors(consumeCode(db, user.id, 'reset', body.code));
@@ -189,7 +194,20 @@ export function authRoutes(db: Db) {
     },
   );
 
-  r.delete('/account', requireAuth, async (c) => {
+  // Deleting is permanent, so prove it's really you: your password, or a sign in from the last 10 minutes
+  // for Apple and Google accounts that have no password.
+  r.delete('/account', requireAuth, limited, zValidator('json', z.object({ password: z.string().max(200).optional() })), async (c) => {
+    const user = await db.one<{ password_hash: string | null }>('SELECT password_hash FROM users WHERE id = $1', [c.var.userId]);
+    if (user?.password_hash) {
+      if (!(await verifyPassword(c.req.valid('json').password ?? '', user.password_hash))) {
+        throw new HTTPException(403, { message: 'That password isn’t right' });
+      }
+    } else {
+      const fresh = await db.one(`SELECT 1 FROM sessions WHERE family_id = $1 GROUP BY family_id HAVING min(created_at) > now() - interval '10 minutes'`, [
+        c.var.family,
+      ]);
+      if (!fresh) throw new HTTPException(403, { message: 'Sign out and back in, then delete your account', cause: 'reauth' });
+    }
     await db.query('DELETE FROM users WHERE id = $1', [c.var.userId]);
     return c.body(null, 204);
   });

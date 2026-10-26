@@ -3,7 +3,8 @@ import { HTTPException } from 'hono/http-exception';
 import { validate as zValidator } from '../lib/validate.js';
 import { z } from 'zod';
 import type { Db, Row } from '../db.js';
-import { requireAuth, requireVerified, type AuthEnv } from '../auth/middleware.js';
+import { rateLimit, requireAuth, requireVerified, type AuthEnv } from '../auth/middleware.js';
+import { blockUser } from './blocks.js';
 import { ageOn } from '../lib/age.js';
 import { distanceMiles } from '../lib/geo.js';
 import { sendPush, type Hub, type MessageDto } from '../realtime.js';
@@ -88,6 +89,7 @@ export function matchRoutes(db: Db, hub: Hub) {
   r.post(
     '/matches/:id/messages',
     requireVerified(db),
+    rateLimit({ limit: 30, windowMs: 60_000, perUser: true, message: 'You’re sending messages very fast. Wait a moment and try again.' }),
     zValidator('param', uuid),
     zValidator('json', z.object({ body: z.string().trim().min(1).max(2000) })),
     async (c) => {
@@ -107,6 +109,7 @@ export function matchRoutes(db: Db, hub: Hub) {
           title: sender?.display_name ?? 'New message',
           body: message.body.slice(0, 140),
           data: { matchId: match.id },
+          kind: 'message',
         });
       }
       return c.json(message, 201);
@@ -141,19 +144,9 @@ export function matchRoutes(db: Db, hub: Hub) {
       const me = c.var.userId;
       const { targetId, reason } = c.req.valid('json');
       if (targetId === me) throw new HTTPException(400, { message: 'You can’t report yourself' });
-      const ended = await db.tx(async (t) => {
-        await t.query('INSERT INTO reports (reporter_id, target_id, reason) VALUES ($1, $2, $3)', [me, targetId, reason]);
-        // Reporting also blocks: end any match and make sure neither person sees the other again.
-        return t.query<{ id: string }>(
-          `UPDATE matches SET ended_at = now()
-           WHERE ended_at IS NULL AND ((user_a = $1 AND user_b = $2) OR (user_a = $2 AND user_b = $1)) RETURNING id`,
-          [me, targetId],
-        );
-      });
-      for (const { id } of ended) {
-        hub.emit(targetId, { type: 'match:ended', matchId: id });
-        hub.emit(me, { type: 'match:ended', matchId: id });
-      }
+      await db.query('INSERT INTO reports (reporter_id, target_id, reason) VALUES ($1, $2, $3)', [me, targetId, reason]);
+      // Reporting also blocks, so neither person sees the other again.
+      await blockUser(db, hub, me, targetId);
       return c.body(null, 204);
     },
   );

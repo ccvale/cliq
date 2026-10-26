@@ -13,6 +13,7 @@ import { meRoutes } from './routes/me.js';
 import { discoverRoutes } from './routes/discover.js';
 import { loadMatch, matchRoutes } from './routes/matches.js';
 import { photoRoutes } from './routes/photos.js';
+import { blockRoutes } from './routes/blocks.js';
 
 export function createApp(db: Db) {
   const hub = new Hub();
@@ -23,6 +24,11 @@ export function createApp(db: Db) {
   const strict = secureHeaders();
   const embeddable = secureHeaders({ crossOriginResourcePolicy: 'cross-origin' });
   app.use('*', (c, next) => (c.req.path.startsWith('/photos/') ? embeddable : strict)(c, next));
+  // requireAuth reads the database from the context to check the session is still active.
+  app.use('*', async (c, next) => {
+    c.set('db' as never, db as never);
+    await next();
+  });
   app.use(
     '*',
     cors({
@@ -39,6 +45,7 @@ export function createApp(db: Db) {
   app.route('/', discoverRoutes(db, hub));
   app.route('/', matchRoutes(db, hub));
   app.route('/', photoRoutes(db));
+  app.route('/', blockRoutes(db, hub));
 
   /**
    * Realtime channel. Browsers can't set headers on a WebSocket, and tokens in URLs end up in logs,

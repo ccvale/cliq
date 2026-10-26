@@ -27,8 +27,15 @@ export type Me = {
   linkedGoogle: boolean;
   emailVerified: boolean;
   profile: Profile;
+  settings: Settings;
   stats: { likesSent: number; swipes: number; matches: number };
 };
+
+export type Settings = { notifyMatches: boolean; notifyMessages: boolean; snoozedUntil: string | null };
+
+export type Device = { id: string; device: string; signedInAt: string; lastSeenAt: string; current: boolean };
+
+export type BlockedPerson = { id: string; displayName: string; palette: Palette; photoUrl: string | null; blockedAt: string };
 
 export type Card = {
   id: string;

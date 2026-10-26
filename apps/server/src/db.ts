@@ -29,7 +29,12 @@ function wrap(q: Querier, tx: Db['tx'], close: Db['close']): Db {
 export async function openDb(opts: { url?: string; dataDir?: string } = {}): Promise<Db> {
   let db: Db;
   if (opts.url) {
-    const pool = new pg.Pool({ connectionString: opts.url });
+    const pool = new pg.Pool({
+      connectionString: opts.url,
+      max: Number(process.env.DATABASE_POOL_SIZE ?? 10),
+      // Managed Postgres such as Supabase: pass its CA certificate (PEM) to verify the server.
+      ...(process.env.DATABASE_CA && { ssl: { ca: process.env.DATABASE_CA.replace(/\\n/g, '\n') } }),
+    });
     const tx: Db['tx'] = async (fn) => {
       const client = await pool.connect();
       try {
@@ -59,11 +64,12 @@ export async function openDb(opts: { url?: string; dataDir?: string } = {}): Pro
 
 async function migrate(db: Db) {
   await db.query(`CREATE TABLE IF NOT EXISTS schema_migrations (id INT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
-  const done = new Set((await db.query<{ id: number }>('SELECT id FROM schema_migrations')).map((r) => r.id));
   for (const [i, sql] of migrations.entries()) {
     const id = i + 1;
-    if (done.has(id)) continue;
     await db.tx(async (t) => {
+      // Several API instances may boot at once against the same database; one migrates, the others wait.
+      await t.query('SELECT pg_advisory_xact_lock(4120)');
+      if (await t.one('SELECT 1 FROM schema_migrations WHERE id = $1', [id])) return;
       for (const statement of sql.split(/;\s*$/m).map((s) => s.trim()).filter(Boolean)) {
         await t.query(statement);
       }

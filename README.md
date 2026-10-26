@@ -30,6 +30,7 @@ docs/       Senior project report, test plan, redesign screenshots
 - **Your palette themes everything**, just like the original: buttons, accents, sliders and chat bubbles all follow the two colors you pick.
 - **Optional photo**: pick or take one, cropped to the card's shape and re-encoded on device (which also strips GPS metadata), then faded into your palette so the colors still lead.
 - **Native touches**: Face ID / fingerprint app lock, Keychain/Keystore token storage, Sign in with Apple and Google, one-time-code autofill for email codes, push notifications for matches and messages, on-device reverse geocoding, light and dark mode.
+- **Your controls**: take a break from Discover (a day, a week, or until you're back), notification switches, light/dark/automatic theme, undo your last swipe, block without reporting, a list of signed-in devices with per-device sign out, and a download of all your data.
 - **Web**: the same screens with a sidebar layout on wide windows; mouse drag and keyboard (Enter to send) work.
 
 ### The API (no third-party auth or database service)
@@ -41,7 +42,8 @@ docs/       Senior project report, test plan, redesign screenshots
 | Social sign-in | Apple and Google identity tokens verified against the providers' public keys |
 | Email | 6-digit codes to confirm your address and to reset a forgotten password. Codes are HMAC-hashed, expire in 15 minutes, allow 5 guesses and can be resent every 45 seconds. Swiping and messaging wait until the email is confirmed. "Forgot password" answers the same whether or not an account exists |
 | Photos | Stored by the API itself (no bucket service). Type is checked from the file's bytes, capped at 2 MB, served with a versioned immutable cache URL |
-| Abuse | Per-IP rate limiting on auth routes, report-and-block, teens (13–17) and adults never see each other |
+| Abuse | Rate limits per address and per account on sign in and resets, spam limits on messages and swipes, block and report, profiles reported by 3 different people are hidden pending review, teens (13–17) and adults never see each other |
+| Sessions | Revoking a device or changing your password cuts it off on its next request. Deleting your account asks for your password |
 | Location | Coarsened to ~1km before storage; others only ever see whole miles. No geocoding API needed |
 | Discovery | Bounding box in SQL, exact distance and mutual age/radius preferences in code, ranked by an evolved version of the original scoring algorithm |
 | Realtime | WebSocket hub with first-message auth, Expo push fallback when the other person is offline |
@@ -85,6 +87,14 @@ cd apps/mobile && npx tsc --noEmit
 ## Configuration
 
 See [`apps/server/.env.example`](apps/server/.env.example). In production, `JWT_SECRET` must be a random string of at least 32 characters and `DATABASE_URL` should point at a managed Postgres.
+
+## Hosting
+
+The database runs on **Supabase** (project `cliq`), used purely as managed Postgres; sign in, matching and chat stay in this API. Every table has row level security switched on with no policies, so Supabase's public REST API can't read anything. Only the API, connecting as the owner, can.
+
+1. In Supabase, open **Project Settings → Database**, set a database password, and copy the **Session pooler** connection string.
+2. Deploy the API. With [Render](https://render.com), choose **New → Blueprint** and pick this repo: [`render.yaml`](render.yaml) builds [`apps/server/Dockerfile`](apps/server/Dockerfile). Paste the connection string as `DATABASE_URL`, and set `SMTP_URL` for email. Any host that runs Docker works the same way.
+3. Point the app at it with `EXPO_PUBLIC_API_URL=https://your-api.onrender.com`.
 
 ## What's next
 

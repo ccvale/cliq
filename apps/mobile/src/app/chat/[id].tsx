@@ -36,7 +36,7 @@ export default function Chat() {
   const [draft, setDraft] = useState('');
   const [typing, setTyping] = useState(false);
   const [menu, setMenu] = useState(false);
-  const [confirm, setConfirm] = useState<'unmatch' | 'report' | null>(null);
+  const [confirm, setConfirm] = useState<'unmatch' | 'block' | 'report' | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const typingTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -251,25 +251,29 @@ export default function Chat() {
         actions={[
           { label: 'View profile', onPress: () => setShowProfile(true) },
           { label: 'Unmatch', onPress: () => setConfirm('unmatch'), destructive: true },
+          { label: 'Block', onPress: () => setConfirm('block'), destructive: true },
           { label: 'Report and block', onPress: () => setConfirm('report'), destructive: true },
         ]}
       />
       <Sheet
         visible={confirm !== null}
         onClose={() => setConfirm(null)}
-        title={confirm === 'report' ? `Report ${person?.displayName}?` : `Unmatch ${person?.displayName}?`}
+        title={`${{ unmatch: 'Unmatch', block: 'Block', report: 'Report' }[confirm ?? 'unmatch']} ${person?.displayName}?`}
         message={
           confirm === 'report'
             ? 'They won’t be able to contact you or see you again, and we’ll review the conversation.'
-            : 'This conversation will disappear for both of you.'
+            : confirm === 'block'
+              ? 'They won’t be able to message you or see you in Discover. You can unblock them in Settings.'
+              : 'This conversation will disappear for both of you.'
         }
         actions={[
           {
-            label: confirm === 'report' ? 'Report and block' : 'Unmatch',
+            label: { unmatch: 'Unmatch', block: 'Block', report: 'Report and block' }[confirm ?? 'unmatch'],
             destructive: true,
             onPress: async () => {
               try {
                 if (confirm === 'report' && person) await api.report(person.id, 'Reported from chat');
+                else if (confirm === 'block' && person) await api.block(person.id);
                 else await api.unmatch(id);
                 remove(id);
                 router.back();

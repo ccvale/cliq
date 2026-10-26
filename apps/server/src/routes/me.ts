@@ -56,7 +56,7 @@ export function meRoutes(db: Db) {
     );
 
   r.get('/', async (c) => {
-    const user = await db.one('SELECT id, email, password_hash IS NOT NULL AS has_password, apple_sub IS NOT NULL AS apple, google_sub IS NOT NULL AS google, email_verified_at IS NOT NULL AS verified FROM users WHERE id = $1', [
+    const user = await db.one('SELECT id, email, password_hash IS NOT NULL AS has_password, apple_sub IS NOT NULL AS apple, google_sub IS NOT NULL AS google, email_verified_at IS NOT NULL AS verified, notify_matches, notify_messages FROM users WHERE id = $1', [
       c.var.userId,
     ]);
     if (!user) throw new HTTPException(401, { message: 'Account no longer exists' });
@@ -68,14 +68,20 @@ export function meRoutes(db: Db) {
         (SELECT count(*)::int FROM matches WHERE (user_a = $1 OR user_b = $1)) AS matches`,
       [c.var.userId],
     );
+    const profile = (await load(c.var.userId))!;
     return c.json({
+      settings: {
+        notifyMatches: user.notify_matches,
+        notifyMessages: user.notify_messages,
+        snoozedUntil: profile.snoozed_until && new Date(profile.snoozed_until) > new Date() ? new Date(profile.snoozed_until).toISOString() : null,
+      },
       id: user.id,
       email: user.email,
       hasPassword: user.has_password,
       linkedApple: user.apple,
       linkedGoogle: user.google,
       emailVerified: user.verified,
-      profile: toProfile((await load(c.var.userId))!),
+      profile: toProfile(profile),
       stats: { likesSent: stats!.likes_sent, swipes: stats!.swipes, matches: stats!.matches },
     });
   });
@@ -148,5 +154,108 @@ export function meRoutes(db: Db) {
     },
   );
 
+  r.patch(
+    '/settings',
+    zValidator(
+      'json',
+      z
+        .object({
+          notifyMatches: z.boolean(),
+          notifyMessages: z.boolean(),
+          // Days to stay hidden from Discover; 0 shows you again. 3650 is "until I turn it off".
+          snoozeDays: z.number().int().min(0).max(3650),
+        })
+        .partial(),
+    ),
+    async (c) => {
+      const body = c.req.valid('json');
+      if (body.notifyMatches !== undefined || body.notifyMessages !== undefined) {
+        await db.query(
+          'UPDATE users SET notify_matches = coalesce($2, notify_matches), notify_messages = coalesce($3, notify_messages) WHERE id = $1',
+          [c.var.userId, body.notifyMatches ?? null, body.notifyMessages ?? null],
+        );
+      }
+      if (body.snoozeDays !== undefined) {
+        await db.query(
+          `UPDATE profiles SET snoozed_until = CASE WHEN $2::int = 0 THEN NULL ELSE now() + make_interval(days => $2::int) END WHERE user_id = $1`,
+          [c.var.userId, body.snoozeDays],
+        );
+      }
+      return c.body(null, 204);
+    },
+  );
+
+  /** Devices signed in to this account: one entry per session family, newest activity first. */
+  r.get('/sessions', async (c) => {
+    const rows = await db.query(
+      `SELECT family_id, min(created_at) AS signed_in_at, max(created_at) AS last_seen_at,
+              (array_agg(user_agent ORDER BY created_at DESC))[1] AS user_agent
+       FROM sessions WHERE user_id = $1
+       GROUP BY family_id
+       HAVING bool_or(revoked_at IS NULL AND expires_at > now())
+       ORDER BY max(created_at) DESC`,
+      [c.var.userId],
+    );
+    return c.json({
+      sessions: rows.map((s) => ({
+        id: s.family_id,
+        device: describeDevice(s.user_agent),
+        signedInAt: new Date(s.signed_in_at).toISOString(),
+        lastSeenAt: new Date(s.last_seen_at).toISOString(),
+        current: s.family_id === c.var.family,
+      })),
+    });
+  });
+
+  r.delete('/sessions/:id', zValidator('param', z.object({ id: z.string().uuid() })), async (c) => {
+    await db.query('UPDATE sessions SET revoked_at = now() WHERE user_id = $1 AND family_id = $2 AND revoked_at IS NULL', [
+      c.var.userId,
+      c.req.valid('param').id,
+    ]);
+    return c.body(null, 204);
+  });
+
+  /** Everything Cliq stores about you, as one JSON file. Other people's messages to you are included; their profiles aren't. */
+  r.get('/export', async (c) => {
+    const me = c.var.userId;
+    const [account, profile, swipes, matches, messages, blocks, reports] = await Promise.all([
+      db.one('SELECT email, email_verified_at, created_at, notify_matches, notify_messages, apple_sub IS NOT NULL AS apple, google_sub IS NOT NULL AS google FROM users WHERE id = $1', [me]),
+      load(me),
+      db.query('SELECT target_id, liked, created_at FROM swipes WHERE swiper_id = $1 ORDER BY created_at', [me]),
+      db.query(
+        `SELECT m.id, m.created_at, m.ended_at, p.display_name AS with_name FROM matches m
+         JOIN profiles p ON p.user_id = CASE WHEN m.user_a = $1 THEN m.user_b ELSE m.user_a END
+         WHERE m.user_a = $1 OR m.user_b = $1 ORDER BY m.created_at`,
+        [me],
+      ),
+      db.query(
+        `SELECT x.match_id, x.sender_id = $1 AS from_me, x.body, x.created_at, x.read_at FROM messages x
+         JOIN matches m ON m.id = x.match_id WHERE m.user_a = $1 OR m.user_b = $1 ORDER BY x.created_at`,
+        [me],
+      ),
+      db.query('SELECT blocked_id, created_at FROM blocks WHERE blocker_id = $1', [me]),
+      db.query('SELECT target_id, reason, created_at FROM reports WHERE reporter_id = $1', [me]),
+    ]);
+    c.header('Content-Disposition', 'attachment; filename="cliq-data.json"');
+    return c.json({
+      exportedAt: new Date().toISOString(),
+      account,
+      profile: profile && { ...toProfile(profile), lat: profile.lat, lng: profile.lng },
+      swipes,
+      matches: matches.map((m) => ({ ...m, messages: messages.filter((x) => x.match_id === m.id) })),
+      blocks,
+      reports,
+    });
+  });
+
   return r;
+}
+
+/** Turns a user agent into something a person recognises, like "iPhone · Cliq app" or "Chrome on Windows". */
+export function describeDevice(ua: string): string {
+  if (!ua) return 'Unknown device';
+  const os = /iPhone|iPad/.test(ua) ? (ua.includes('iPad') ? 'iPad' : 'iPhone') : /Android/.test(ua) ? 'Android' : /Mac OS X|Macintosh/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : /Linux/.test(ua) ? 'Linux' : '';
+  if (/okhttp|CFNetwork|Expo|Darwin/i.test(ua) && !/Mozilla/.test(ua)) return `${os || 'Phone'} · Cliq app`;
+  const browser = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'Browser';
+  return os ? `${browser} on ${os}` : browser;
 }

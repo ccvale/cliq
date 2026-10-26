@@ -3,7 +3,7 @@ import { HTTPException } from 'hono/http-exception';
 import { validate as zValidator } from '../lib/validate.js';
 import { z } from 'zod';
 import type { Db, Row } from '../db.js';
-import { requireAuth, requireVerified, type AuthEnv } from '../auth/middleware.js';
+import { rateLimit, requireAuth, requireVerified, type AuthEnv } from '../auth/middleware.js';
 import { photoUrl } from './photos.js';
 import { ageBand, ageOn } from '../lib/age.js';
 import { distanceLabel, distanceMiles } from '../lib/geo.js';
@@ -30,6 +30,8 @@ export function discoverRoutes(db: Db, hub: Hub) {
   // Mounted at the root, so guard only this router's paths (not /ws or /health).
   r.use('/discover', requireAuth);
   r.use('/swipes', requireAuth, requireVerified(db));
+  r.use('/swipes/*', requireAuth);
+  const swipeLimit = rateLimit({ limit: 120, windowMs: 60_000, perUser: true, message: 'Slow down a little. Take a minute to read some profiles.' });
 
   r.get('/discover', zValidator('query', z.object({ limit: z.coerce.number().int().min(1).max(50).default(20) })), async (c) => {
     const me = await db.one('SELECT * FROM profiles WHERE user_id = $1', [c.var.userId]);
@@ -48,7 +50,9 @@ export function discoverRoutes(db: Db, hub: Hub) {
        WHERE p.onboarded AND p.user_id <> $1
          AND p.lat BETWEEN $2 AND $3 AND p.lng BETWEEN $4 AND $5
          AND NOT EXISTS (SELECT 1 FROM swipes s WHERE s.swiper_id = $1 AND s.target_id = p.user_id)
-         AND NOT EXISTS (SELECT 1 FROM reports r WHERE (r.reporter_id = $1 AND r.target_id = p.user_id) OR (r.reporter_id = p.user_id AND r.target_id = $1))
+         AND (p.snoozed_until IS NULL OR p.snoozed_until < now())
+         AND (SELECT count(DISTINCT reporter_id) FROM reports WHERE target_id = p.user_id) < 3
+         AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_id = $1 AND b.blocked_id = p.user_id) OR (b.blocker_id = p.user_id AND b.blocked_id = $1))
          AND NOT EXISTS (SELECT 1 FROM matches m WHERE (m.user_a = $1 AND m.user_b = p.user_id) OR (m.user_b = $1 AND m.user_a = p.user_id))
        LIMIT 500`,
       [c.var.userId, me.lat - latSpan, me.lat + latSpan, me.lng - lngSpan, me.lng + lngSpan],
@@ -82,11 +86,15 @@ export function discoverRoutes(db: Db, hub: Hub) {
     return c.json({ cards: scored.slice(0, c.req.valid('query').limit).map((s) => s.card) });
   });
 
-  r.post('/swipes', zValidator('json', z.object({ targetId: z.string().uuid(), liked: z.boolean() })), async (c) => {
+  r.post('/swipes', swipeLimit, zValidator('json', z.object({ targetId: z.string().uuid(), liked: z.boolean() })), async (c) => {
     const { targetId, liked } = c.req.valid('json');
     const me = c.var.userId;
     if (targetId === me) throw new HTTPException(400, { message: 'You can’t swipe on yourself' });
-    const target = await db.one('SELECT display_name FROM profiles WHERE user_id = $1 AND onboarded', [targetId]);
+    const target = await db.one(
+      `SELECT display_name FROM profiles WHERE user_id = $1 AND onboarded
+         AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_id = $1 AND b.blocked_id = $2) OR (b.blocker_id = $2 AND b.blocked_id = $1))`,
+      [targetId, me],
+    );
     if (!target) throw new HTTPException(404, { message: 'That person is no longer on Cliq' });
 
     const match = await db.tx(async (t) => {
@@ -114,10 +122,28 @@ export function discoverRoutes(db: Db, hub: Hub) {
           title: 'You clicked with someone ✨',
           body: `You and ${mine?.display_name} both want to hang out. Say hi!`,
           data: { matchId: match.id },
+          kind: 'match',
         });
       }
     }
     return c.json({ matchId: match?.id ?? null });
+  });
+
+  // Takes back your most recent swipe, within a few minutes and only if it didn't make a match.
+  r.post('/swipes/undo', async (c) => {
+    const me = c.var.userId;
+    const last = await db.one<{ target_id: string }>(
+      `SELECT target_id FROM swipes WHERE swiper_id = $1 AND created_at > now() - interval '10 minutes' ORDER BY created_at DESC LIMIT 1`,
+      [me],
+    );
+    if (!last) throw new HTTPException(404, { message: 'Nothing to undo' });
+    const matched = await db.one(
+      `SELECT 1 FROM matches WHERE (user_a = $1 AND user_b = $2) OR (user_a = $2 AND user_b = $1)`,
+      [me, last.target_id],
+    );
+    if (matched) throw new HTTPException(409, { message: 'You already clicked with them, so that one stays' });
+    await db.query('DELETE FROM swipes WHERE swiper_id = $1 AND target_id = $2', [me, last.target_id]);
+    return c.json({ targetId: last.target_id });
   });
 
   return r;

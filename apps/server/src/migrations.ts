@@ -111,4 +111,34 @@ export const migrations: string[] = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
   `,
+  `
+  CREATE TABLE blocks (
+    blocker_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    blocked_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (blocker_id, blocked_id)
+  );
+  CREATE INDEX blocks_blocked_idx ON blocks (blocked_id);
+  INSERT INTO blocks (blocker_id, blocked_id) SELECT DISTINCT reporter_id, target_id FROM reports ON CONFLICT DO NOTHING;
+
+  ALTER TABLE users ADD COLUMN notify_matches BOOLEAN NOT NULL DEFAULT true;
+  ALTER TABLE users ADD COLUMN notify_messages BOOLEAN NOT NULL DEFAULT true;
+  ALTER TABLE profiles ADD COLUMN snoozed_until TIMESTAMPTZ;
+  `,
+  // Hosts like Supabase also expose the public schema through their own REST API. Row level security with no
+  // policies shuts that door; the Cliq API connects as the table owner, which RLS doesn't apply to.
+  `
+  ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE swipes ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE matches ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE push_tokens ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE email_codes ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE photos ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE blocks ENABLE ROW LEVEL SECURITY;
+  ALTER TABLE schema_migrations ENABLE ROW LEVEL SECURITY;
+  `,
 ];

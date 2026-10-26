@@ -2,7 +2,7 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { secureStorage } from './storage';
 import { demoApi } from './demo';
-import type { Card, MatchSummary, Me, Message, Profile, ProfilePatch } from './types';
+import type { BlockedPerson, Card, Device, MatchSummary, Me, Message, Profile, ProfilePatch } from './types';
 
 /** In development the API runs on the same machine as Metro, so reuse the host the device already reaches. */
 function resolveBaseUrl() {
@@ -119,12 +119,21 @@ const realApi = {
     request<Tokens>('POST', '/auth/password/reset', { email, code, password }),
   signOut: () => request<void>('POST', '/auth/signout'),
   changePassword: (current: string | undefined, next: string) => request<void>('POST', '/auth/password', { current, next }),
-  deleteAccount: () => request<void>('DELETE', '/auth/account'),
+  deleteAccount: (password?: string) => request<void>('DELETE', '/auth/account', { password }),
 
   me: () => request<Me>('GET', '/me'),
   updateProfile: (patch: ProfilePatch) => request<Profile>('PATCH', '/me/profile', patch),
   uploadPhoto: (photo: Blob) => request<{ photoUrl: string }>('PUT', '/me/photo', photo),
   deletePhoto: () => request<void>('DELETE', '/me/photo'),
+  updateSettings: (patch: { notifyMatches?: boolean; notifyMessages?: boolean; snoozeDays?: number }) =>
+    request<void>('PATCH', '/me/settings', patch),
+  devices: () => request<{ sessions: Device[] }>('GET', '/me/sessions'),
+  signOutDevice: (id: string) => request<void>('DELETE', `/me/sessions/${id}`),
+  exportData: () => request<unknown>('GET', '/me/export'),
+  blocked: () => request<{ blocks: BlockedPerson[] }>('GET', '/blocks'),
+  block: (id: string) => request<void>('POST', `/blocks/${id}`),
+  unblock: (id: string) => request<void>('DELETE', `/blocks/${id}`),
+  undoSwipe: () => request<{ targetId: string }>('POST', '/swipes/undo'),
   registerPushToken: (token: string, platform: string) => request<void>('POST', '/me/push-token', { token, platform }),
 
   discover: () => request<{ cards: Card[]; reason?: string }>('GET', '/discover'),

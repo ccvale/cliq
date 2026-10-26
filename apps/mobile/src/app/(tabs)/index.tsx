@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { SlidersHorizontal, Sparkles, X } from 'lucide-react-native';
+import { RotateCcw, SlidersHorizontal, Sparkles, X } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
 import { MeshGradient } from '@/components/MeshGradient';
@@ -31,6 +31,8 @@ export default function Discover() {
   const [area, setArea] = useState({ width: 0, height: 0 });
   // Session stats, a nod to the original Cliq dashboard.
   const [stats, setStats] = useState({ yes: 0, no: 0 });
+  // The last card you swiped, for undo. Cleared once it can't be undone (it made a match).
+  const [last, setLast] = useState<{ card: Card; liked: boolean } | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -38,6 +40,7 @@ export default function Discover() {
       const { cards } = await api.discover();
       setCards(cards);
       setRemaining(cards.length);
+      setLast(null);
     } catch (e: any) {
       setError(e.message);
       setCards([]);
@@ -51,9 +54,11 @@ export default function Discover() {
   const onSwiped = async (card: Card, liked: boolean) => {
     setStats((s) => (liked ? { ...s, yes: s.yes + 1 } : { ...s, no: s.no + 1 }));
     setRemaining((r) => r - 1);
+    setLast({ card, liked });
     try {
       const { matchId } = await api.swipe(card.id, liked);
       if (matchId) {
+        setLast(null);
         router.push({ pathname: '/match/[id]', params: { id: matchId, name: card.displayName, palette: card.palette.join(','), photo: card.photoUrl ?? '' } });
       }
     } catch (e: any) {
@@ -65,6 +70,21 @@ export default function Discover() {
       } else {
         setError(e.message);
       }
+    }
+  };
+
+  const undo = async () => {
+    if (!last || !cards) return;
+    try {
+      await api.undoSwipe();
+      // Put the card back on top of whatever is left in the deck.
+      setCards([last.card, ...cards.slice(cards.length - remaining)]);
+      setRemaining((r) => r + 1);
+      setStats((s) => (last.liked ? { ...s, yes: s.yes - 1 } : { ...s, no: s.no - 1 }));
+      setLast(null);
+    } catch (e: any) {
+      setLast(null);
+      setError(e.message);
     }
   };
 
@@ -109,6 +129,7 @@ export default function Discover() {
             action={
               <View style={{ gap: 10 }}>
                 <Button label="Widen my search" variant="accent" onPress={() => router.push('/settings')} />
+                {last ? <Button label={`Undo ${last.card.displayName}`} variant="secondary" icon={<RotateCcw size={16} color={colors.ink} />} onPress={undo} /> : null}
                 <Button label="Refresh" variant="ghost" onPress={load} />
               </View>
             }
@@ -117,6 +138,17 @@ export default function Discover() {
           <Animated.View entering={FadeIn.duration(400)} style={{ alignItems: 'center' }}>
             <SwipeDeck ref={deck} cards={cards} width={cardWidth} height={cardHeight} onSwiped={onSwiped} />
             <Animated.View entering={FadeInDown.delay(200)} style={styles.actions}>
+              <Pressable
+                onPress={undo}
+                disabled={!last}
+                accessibilityLabel="Undo last swipe"
+                style={({ pressed }) => [
+                  styles.round,
+                  { width: 44, height: 44, backgroundColor: colors.bgRaised, borderColor: colors.line, opacity: last ? 1 : 0.35, transform: [{ scale: pressed ? 0.92 : 1 }] },
+                ]}
+              >
+                <RotateCcw size={18} color={colors.inkSoft} strokeWidth={2.4} />
+              </Pressable>
               <Pressable
                 onPress={() => deck.current?.swipe(false)}
                 accessibilityLabel="Not now"
@@ -150,7 +182,7 @@ export default function Discover() {
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 },
   iconButton: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', borderWidth: StyleSheet.hairlineWidth },
-  actions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20, height: ACTIONS_HEIGHT, paddingTop: 36 },
+  actions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14, height: ACTIONS_HEIGHT, paddingTop: 36 },
   round: {
     borderRadius: 999,
     alignItems: 'center',

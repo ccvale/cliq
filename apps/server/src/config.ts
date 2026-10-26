@@ -23,5 +23,8 @@ export const config = {
   googleAudiences: list(env.GOOGLE_AUDIENCES),
   smtpUrl: env.SMTP_URL || undefined,
   mailFrom: env.MAIL_FROM ?? 'Cliq <hello@cliq.fi>',
+  // Set when the API sits behind exactly one reverse proxy (Render, Fly, Railway) that appends the client IP
+  // to X-Forwarded-For. Otherwise the header is ignored, since any client can send it.
+  trustProxy: env.TRUST_PROXY === '1',
   isProd,
 };
