@@ -1,12 +1,15 @@
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { PenLine, Settings } from 'lucide-react-native';
+import { BadgeShelf } from '@/components/BadgeShelf';
 import { Button } from '@/components/Button';
 import { ProfileCard } from '@/components/ProfileCard';
 import { Screen } from '@/components/Screen';
 import { Txt } from '@/components/Txt';
+import { api } from '@/lib/api';
+import type { Achievement } from '@/lib/types';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/ThemeProvider';
 import { WIDE } from '@/theme/tokens';
@@ -24,8 +27,14 @@ function Stat({ value, label }: { value: number | string; label: string }) {
 
 export default function Profile() {
   const { me, reload } = useSession();
-  // Stats change as you swipe, so refresh them whenever this tab comes into view.
-  useFocusEffect(useCallback(() => void reload().catch(() => {}), [reload]));
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  // Stats and badges change as you swipe and chat, so refresh them whenever this tab comes into view.
+  useFocusEffect(
+    useCallback(() => {
+      void reload().catch(() => {});
+      void api.achievements().then((r) => setAchievements(r.achievements)).catch(() => {});
+    }, [reload]),
+  );
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   if (!me) return null;
@@ -62,6 +71,9 @@ export default function Profile() {
             city: p.city,
             distance: 'This is you',
             photoUrl: p.photoUrl,
+            prompts: p.prompts,
+            featured: p.featured,
+            badges: p.badges,
           }}
           style={{ width: cardWidth, height: cardWidth * 1.35 }}
         />
@@ -77,6 +89,12 @@ export default function Profile() {
         <View style={[styles.divider, { backgroundColor: colors.line }]} />
         <Stat value={me.stats.matches} label="Friends" />
       </Animated.View>
+
+      {achievements.length ? (
+        <Animated.View entering={FadeInDown.delay(160).duration(500)} style={{ marginBottom: 20 }}>
+          <BadgeShelf achievements={achievements} />
+        </Animated.View>
+      ) : null}
 
       <Animated.View entering={FadeInDown.delay(200).duration(500)} style={{ gap: 10, paddingBottom: width >= WIDE ? 32 : 120 }}>
         <Button label="Edit profile" icon={<PenLine size={18} color={colors.bg} />} onPress={() => router.push('/edit-profile')} />

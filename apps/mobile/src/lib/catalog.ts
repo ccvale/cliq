@@ -31,3 +31,33 @@ export const INTERESTS: Record<string, string> = {
 };
 export const INTEREST_NAMES = Object.keys(INTERESTS);
 export const MAX_INTERESTS = 5;
+
+// Mirrors PROMPTS in apps/server/src/lib/catalog.ts — keep the ids in sync.
+export const PROMPTS: Record<string, string> = {
+  'perfect-saturday': 'My perfect Saturday',
+  'talk-for-hours': 'I could talk for hours about',
+  'teach-you': 'I can teach you how to',
+  'looking-for': 'Looking for someone to',
+  'hot-take': 'My most controversial opinion',
+  'comfort-food': 'Go-to comfort food',
+  'last-obsession': 'My latest obsession',
+  'hidden-talent': 'A hidden talent of mine',
+  'green-flag': 'Green flag in a friend',
+  'first-hang': 'Ideal first hangout',
+};
+export const MAX_PROMPTS = 3;
+
+// Mirrors BADGE_IDS in apps/server/src/lib/achievements.ts — keep the ids in sync.
+export const BADGES: Record<string, { name: string; emoji: string; how: string }> = {
+  verified: { name: 'Verified', emoji: '✅', how: 'Confirm your email address' },
+  'first-match': { name: 'First Click', emoji: '✨', how: 'Make your first match' },
+  'first-message': { name: 'Icebreaker', emoji: '💬', how: 'Send your first message' },
+  'first-block': { name: 'Boundaries', emoji: '🛡️', how: 'Block someone for the first time' },
+  'all-about-me': { name: 'All About Me', emoji: '🪞', how: 'Add a photo, a bio and a prompt' },
+  tastemaker: { name: 'Tastemaker', emoji: '🎧', how: 'Feature a song, movie or show' },
+  explorer: { name: 'Explorer', emoji: '🧭', how: 'Swipe on 50 people' },
+  'social-butterfly': { name: 'Social Butterfly', emoji: '🦋', how: 'Make 5 friends' },
+  chatterbox: { name: 'Chatterbox', emoji: '🗣️', how: 'Send 100 messages' },
+};
+
+export const FEATURED_KINDS = { song: 'Song', movie: 'Movie', show: 'Show' } as const;

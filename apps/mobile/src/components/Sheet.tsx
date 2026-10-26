@@ -1,4 +1,4 @@
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -17,6 +17,7 @@ export function Sheet({ visible, title, message, actions, onClose }: {
 }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <Animated.View entering={FadeIn.duration(180)} style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(8,7,10,0.45)' }]}>
@@ -37,7 +38,8 @@ export function Sheet({ visible, title, message, actions, onClose }: {
             {message}
           </Txt>
         ) : null}
-        <View style={{ marginTop: 12, gap: 2 }}>
+        {/* Long lists (like the prompt picker) scroll instead of running off the top of the screen. */}
+        <ScrollView style={{ marginTop: 12, maxHeight: height * 0.6 }} contentContainerStyle={{ gap: 2 }} bounces={false}>
           {[...actions, { label: 'Cancel', onPress: onClose }].map((a, i) => (
             <Pressable
               key={a.label}
@@ -52,7 +54,7 @@ export function Sheet({ visible, title, message, actions, onClose }: {
               </Txt>
             </Pressable>
           ))}
-        </View>
+        </ScrollView>
       </Animated.View>
     </Modal>
   );

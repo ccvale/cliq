@@ -35,6 +35,11 @@ export function MatchesProvider({ children }: { children: ReactNode }) {
     return realtime.subscribe((event) => {
       if (event.type === 'match:new') void refresh();
       if (event.type === 'match:ended') setMatches((list) => list.filter((m) => m.id !== event.matchId));
+      if (event.type === 'presence') {
+        setMatches((list) =>
+          list.map((m) => (m.person.id === event.userId ? { ...m, online: event.online, lastActiveAt: event.at } : m)),
+        );
+      }
       if (event.type === 'message:new') {
         const { message } = event;
         setMatches((list) => {
@@ -46,7 +51,7 @@ export function MatchesProvider({ children }: { children: ReactNode }) {
           const fromMe = message.senderId === me?.id;
           const updated: MatchSummary = {
             ...found,
-            lastMessage: { body: message.body, fromMe, at: message.createdAt },
+            lastMessage: { body: message.kind === 'image' ? '📷 Photo' : message.kind === 'gif' ? 'GIF' : message.body, fromMe, at: message.createdAt },
             unread: fromMe ? found.unread : found.unread + 1,
           };
           return [updated, ...list.filter((m) => m.id !== found.id)];

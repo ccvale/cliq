@@ -14,6 +14,7 @@ import { SessionProvider, useSession } from '@/state/session';
 import { MatchesProvider } from '@/state/matches';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { LockScreen } from '@/components/LockScreen';
+import { AchievementToast } from '@/components/AchievementToast';
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -82,6 +83,7 @@ function Navigator() {
           />
         </Stack.Protected>
       </Stack>
+      {signedIn && onboarded && !locked ? <AchievementToast /> : null}
       {locked ? <LockScreen /> : null}
     </>
   );

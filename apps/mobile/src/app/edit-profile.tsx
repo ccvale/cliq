@@ -6,16 +6,18 @@ import { Avatar } from '@/components/Avatar';
 import { pickPhoto } from '@/lib/photo';
 import { Button } from '@/components/Button';
 import { Field } from '@/components/Field';
+import { FeaturedPicker } from '@/components/FeaturedPicker';
 import { InterestPicker } from '@/components/InterestPicker';
 import { PalettePicker } from '@/components/PalettePicker';
+import { PromptEditor } from '@/components/PromptEditor';
 import { Screen } from '@/components/Screen';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Section } from '@/components/Section';
 import { Txt } from '@/components/Txt';
 import { api } from '@/lib/api';
-import { MAX_INTERESTS } from '@/lib/catalog';
+import { MAX_INTERESTS, MAX_PROMPTS } from '@/lib/catalog';
 import { locateMe, type Place } from '@/lib/location';
-import type { Palette, ProfilePatch } from '@/lib/types';
+import type { Featured, Palette, ProfilePatch, PromptAnswer } from '@/lib/types';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -29,6 +31,8 @@ export default function EditProfile() {
   const [gigPlace, setGigPlace] = useState(p.gigPlace);
   const [interests, setInterests] = useState(p.interests);
   const [palette, setPalette] = useState<Palette>(p.palette);
+  const [prompts, setPrompts] = useState<PromptAnswer[]>(p.prompts ?? []);
+  const [featured, setFeatured] = useState<Featured | null>(p.featured ?? null);
   const [city, setCity] = useState(p.city);
   const [place, setPlace] = useState<Place | null>(null);
   const [busy, setBusy] = useState(false);
@@ -62,7 +66,9 @@ export default function EditProfile() {
     setBusy(true);
     setError(null);
     try {
-      const patch: ProfilePatch = { displayName, bio, gigTitle, gigPlace, interests, palette };
+      // Prompts left blank are dropped rather than saved empty.
+      const answered = prompts.map((q) => ({ ...q, answer: q.answer.trim() })).filter((q) => q.answer);
+      const patch: ProfilePatch = { displayName, bio, gigTitle, gigPlace, interests, palette, prompts: answered, featured };
       if (place) patch.location = { ...place, city };
       setProfile(await api.updateProfile(patch));
       router.back();
@@ -149,6 +155,14 @@ export default function EditProfile() {
       <Section title="Current gig">
         <Field label="Title" value={gigTitle} onChangeText={setGigTitle} maxLength={60} placeholder="Student, barista, designer…" />
         <Field label="Where" value={gigPlace} onChangeText={setGigPlace} maxLength={60} placeholder="Ramapo College" />
+      </Section>
+
+      <Section title={`Prompts · ${prompts.length}/${MAX_PROMPTS}`} footer="Tap the bottom of a card to flip through someone’s prompts.">
+        <PromptEditor value={prompts} onChange={setPrompts} />
+      </Section>
+
+      <Section title="Featured" footer="A song on repeat, a favorite movie, or the show you’re watching.">
+        <FeaturedPicker value={featured} onChange={setFeatured} />
       </Section>
 
       <Section title={`Interests · ${interests.length}/${MAX_INTERESTS}`}>
