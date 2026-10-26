@@ -5,17 +5,17 @@ import { api, session } from '@/lib/api';
 import { realtime } from '@/lib/realtime';
 import { registerForPush } from '@/lib/push';
 import { secureStorage } from '@/lib/storage';
-import type { Me, Profile } from '@/lib/types';
+import { router } from 'expo-router';
+import type { AuthResult, Me, Profile } from '@/lib/types';
 
 type Status = 'loading' | 'signedOut' | 'signedIn';
-type Tokens = { accessToken: string; refreshToken: string };
 
 type SessionValue = {
   status: Status;
   me: Me | null;
   locked: boolean;
   biometricLock: boolean;
-  completeSignIn: (tokens: Tokens) => Promise<void>;
+  completeSignIn: (result: AuthResult) => Promise<void>;
   signOut: () => Promise<void>;
   reload: () => Promise<void>;
   setProfile: (profile: Profile) => void;
@@ -80,8 +80,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     me,
     locked: locked && status === 'signedIn',
     biometricLock,
-    async completeSignIn(tokens) {
-      await session.save(tokens);
+    async completeSignIn(result) {
+      // Two-step verification is on: ask for the authenticator code first.
+      if ('mfaRequired' in result) {
+        router.push({ pathname: '/two-factor', params: { token: result.mfaToken } });
+        return;
+      }
+      await session.save(result);
       await loadMe();
     },
     async signOut() {

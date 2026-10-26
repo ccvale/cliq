@@ -4,11 +4,13 @@ import { validate as zValidator } from '../lib/validate.js';
 import { z } from 'zod';
 import type { Db } from '../db.js';
 import { dummyVerify, hashPassword, verifyPassword } from '../auth/password.js';
-import { createSession, revokeFamily, rotateSession, RefreshError } from '../auth/tokens.js';
+import { createSession, revokeFamily, rotateSession, RefreshError, signMfaToken, verifyMfaToken } from '../auth/tokens.js';
+import { checkSecondFactor } from '../auth/second-factor.js';
+import { describeDevice } from '../lib/device.js';
 import { verifyAppleToken, verifyGoogleToken, type ExternalIdentity } from '../auth/oauth.js';
 import { createLimiter, rateLimit, requireAuth, type AuthEnv } from '../auth/middleware.js';
 import { CodeError, consumeCode, issueCode } from '../auth/codes.js';
-import { codeEmail, sendMail } from '../lib/mailer.js';
+import { codeEmail, newDeviceEmail, sendMail } from '../lib/mailer.js';
 
 const email = z.string().trim().toLowerCase().email('Enter a valid email address').max(254);
 const password = z
@@ -30,7 +32,33 @@ export function authRoutes(db: Db) {
       throw err;
     });
 
-  async function sendCode(userId: string, to: string, purpose: 'verify' | 'reset') {
+  /**
+   * Last step of every sign in: either a session, or, when two-step verification is on, a short-lived token
+   * the app trades for a session at /auth/2fa along with the authenticator code.
+   */
+  async function finishSignIn(c: { json: (body: unknown, status?: any) => Response; req: { header: (k: string) => string | undefined } }, userId: string) {
+    const user = await db.one<{ mfa: boolean }>('SELECT totp_enabled_at IS NOT NULL AS mfa FROM users WHERE id = $1', [userId]);
+    if (user?.mfa) return c.json({ mfaRequired: true, mfaToken: await signMfaToken(userId) });
+    return c.json(await startSession(userId, ua(c)));
+  }
+
+  /** Creates the session and emails the owner when it's a device the account hasn't used before. */
+  async function startSession(userId: string, agent: string) {
+    const known = await db.one<{ any: boolean; same: boolean }>(
+      'SELECT count(*) > 0 AS any, bool_or(user_agent = $2) AS same FROM sessions WHERE user_id = $1',
+      [userId, agent.slice(0, 200)],
+    );
+    const tokens = await createSession(db, userId, agent);
+    if (known?.any && !known.same) {
+      const user = await db.one<{ email: string | null }>('SELECT email FROM users WHERE id = $1', [userId]);
+      if (user?.email) {
+        void sendMail({ to: user.email, ...newDeviceEmail(describeDevice(agent), new Date()) }).catch((err) => console.error('alert email failed', err));
+      }
+    }
+    return tokens;
+  }
+
+  async function sendCode(userId: string, to: string, purpose: 'verify' | 'reset' | 'signin') {
     const code = await codeErrors(issueCode(db, userId, purpose));
     await sendMail({ to, ...codeEmail(purpose, code) });
   }
@@ -61,7 +89,7 @@ export function authRoutes(db: Db) {
     );
     const ok = user?.password_hash ? await verifyPassword(body.password, user.password_hash) : await dummyVerify(body.password);
     if (!user || !ok) throw new HTTPException(401, { message: 'That email and password don’t match' });
-    return c.json(await createSession(db, user.id, ua(c)));
+    return finishSignIn(c, user.id);
   });
 
   /** Finds the account linked to an Apple or Google identity, linking or creating one as needed. */
@@ -100,7 +128,7 @@ export function authRoutes(db: Db) {
       const identity = await verifyAppleToken(body.identityToken).catch((e) => {
         throw new HTTPException(401, { message: e.message ?? 'Apple sign in failed' });
       });
-      return c.json(await createSession(db, await signInExternal('apple', identity, body.givenName), ua(c)));
+      return finishSignIn(c, await signInExternal('apple', identity, body.givenName));
     },
   );
 
@@ -108,7 +136,7 @@ export function authRoutes(db: Db) {
     const identity = await verifyGoogleToken(c.req.valid('json').idToken).catch((e) => {
       throw new HTTPException(401, { message: e.message ?? 'Google sign in failed' });
     });
-    return c.json(await createSession(db, await signInExternal('google', identity), ua(c)));
+    return finishSignIn(c, await signInExternal('google', identity));
   });
 
   r.post('/refresh', zValidator('json', z.object({ refreshToken: z.string().min(20).max(200) })), async (c) => {
@@ -190,12 +218,47 @@ export function authRoutes(db: Db) {
         user.id,
       ]);
       await db.query('UPDATE sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL', [user.id]);
-      return c.json(await createSession(db, user.id, ua(c)));
+      return finishSignIn(c, user.id);
     },
   );
 
   // Deleting is permanent, so prove it's really you: your password, or a sign in from the last 10 minutes
   // for Apple and Google accounts that have no password.
+  // Passwordless sign in: a 6-digit code to the account's email. Same answer whether or not the account exists.
+  r.post('/code/send', limited, zValidator('json', z.object({ email })), async (c) => {
+    const { email: address } = c.req.valid('json');
+    perEmail.hit(`code:${address}`);
+    const user = await db.one<{ id: string }>('SELECT id FROM users WHERE lower(email) = $1', [address]);
+    if (user) {
+      await sendCode(user.id, address, 'signin').catch((err) => {
+        if (!(err instanceof HTTPException)) console.error('sign in email failed', err);
+      });
+    }
+    return c.body(null, 204);
+  });
+
+  r.post('/code/verify', limited, zValidator('json', z.object({ email, code: z.string().trim().max(10) })), async (c) => {
+    const body = c.req.valid('json');
+    perEmail.hit(`codeverify:${body.email}`);
+    const user = await db.one<{ id: string }>('SELECT id FROM users WHERE lower(email) = $1', [body.email]);
+    if (!user) throw new HTTPException(400, { message: 'That code has expired. Request a new one.' });
+    await codeErrors(consumeCode(db, user.id, 'signin', body.code));
+    await db.query('UPDATE users SET email_verified_at = coalesce(email_verified_at, now()) WHERE id = $1', [user.id]);
+    return finishSignIn(c, user.id);
+  });
+
+  // Second step: the authenticator code (or a backup code) for an account with two-step verification on.
+  const perAccount = createLimiter({ limit: 8, windowMs: 15 * 60_000, message: 'Too many tries. Wait 15 minutes and try again.' });
+  r.post('/2fa', limited, zValidator('json', z.object({ mfaToken: z.string().min(10).max(1000), code: z.string().trim().min(6).max(20) })), async (c) => {
+    const body = c.req.valid('json');
+    const userId = await verifyMfaToken(body.mfaToken).catch(() => {
+      throw new HTTPException(401, { message: 'That took too long. Sign in again.' });
+    });
+    perAccount.hit(userId);
+    if (!(await checkSecondFactor(db, userId, body.code))) throw new HTTPException(400, { message: 'That code isn’t right' });
+    return c.json(await startSession(userId, ua(c)));
+  });
+
   r.delete('/account', requireAuth, limited, zValidator('json', z.object({ password: z.string().max(200).optional() })), async (c) => {
     const user = await db.one<{ password_hash: string | null }>('SELECT password_hash FROM users WHERE id = $1', [c.var.userId]);
     if (user?.password_hash) {

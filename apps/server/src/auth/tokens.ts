@@ -20,9 +20,27 @@ export async function signAccessToken(userId: string, sessionFamily: string) {
     .sign(config.jwtSecret);
 }
 
+/** Proves the first factor passed. Only good for the two-step verification endpoint, for five minutes. */
+export async function signMfaToken(userId: string) {
+  return new SignJWT({ typ: 'mfa' })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setSubject(userId)
+    .setIssuedAt()
+    .setIssuer('cliq')
+    .setExpirationTime('5m')
+    .sign(config.jwtSecret);
+}
+
+export async function verifyMfaToken(token: string) {
+  const { payload } = await jwtVerify(token, config.jwtSecret, { issuer: 'cliq', algorithms: ['HS256'] });
+  if (payload.typ !== 'mfa' || !payload.sub) throw new Error('not a two-step token');
+  return payload.sub;
+}
+
 export async function verifyAccessToken(token: string) {
   const { payload } = await jwtVerify(token, config.jwtSecret, { issuer: 'cliq', algorithms: ['HS256'] });
   if (!payload.sub) throw new Error('missing subject');
+  if (payload.typ) throw new Error('not an access token');
   return { userId: payload.sub, family: String(payload.fam ?? '') };
 }
 

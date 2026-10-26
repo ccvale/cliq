@@ -8,6 +8,9 @@ import { GENDERS, INTERESTS, PALETTE_IDS } from '../lib/catalog.js';
 import { ageOn, bandBounds } from '../lib/age.js';
 import { coarsen } from '../lib/geo.js';
 import { photoUrl } from './photos.js';
+import { describeDevice } from '../lib/device.js';
+import { checkSecondFactor } from '../auth/second-factor.js';
+import { checkTotp, hashBackupCode, newBackupCodes, newTotpSecret, openSecret, otpauthUri, sealSecret } from '../auth/totp.js';
 
 export const toProfile = (p: Row) => ({
   displayName: p.display_name as string,
@@ -56,7 +59,7 @@ export function meRoutes(db: Db) {
     );
 
   r.get('/', async (c) => {
-    const user = await db.one('SELECT id, email, password_hash IS NOT NULL AS has_password, apple_sub IS NOT NULL AS apple, google_sub IS NOT NULL AS google, email_verified_at IS NOT NULL AS verified, notify_matches, notify_messages FROM users WHERE id = $1', [
+    const user = await db.one('SELECT id, email, password_hash IS NOT NULL AS has_password, apple_sub IS NOT NULL AS apple, google_sub IS NOT NULL AS google, email_verified_at IS NOT NULL AS verified, notify_matches, notify_messages, totp_enabled_at IS NOT NULL AS mfa FROM users WHERE id = $1', [
       c.var.userId,
     ]);
     if (!user) throw new HTTPException(401, { message: 'Account no longer exists' });
@@ -81,6 +84,7 @@ export function meRoutes(db: Db) {
       linkedApple: user.apple,
       linkedGoogle: user.google,
       emailVerified: user.verified,
+      twoFactorEnabled: user.mfa,
       profile: toProfile(profile),
       stats: { likesSent: stats!.likes_sent, swipes: stats!.swipes, matches: stats!.matches },
     });
@@ -185,6 +189,43 @@ export function meRoutes(db: Db) {
     },
   );
 
+  // Two-step verification. Setup stores a pending secret; it only takes effect once a code from the app checks out.
+  r.post('/2fa/setup', async (c) => {
+    const user = await db.one<{ email: string | null; mfa: boolean }>('SELECT email, totp_enabled_at IS NOT NULL AS mfa FROM users WHERE id = $1', [c.var.userId]);
+    if (user?.mfa) throw new HTTPException(409, { message: 'Two-step verification is already on' });
+    const secret = newTotpSecret();
+    await db.query('UPDATE users SET totp_pending_secret = $2 WHERE id = $1', [c.var.userId, sealSecret(secret)]);
+    return c.json({ secret, uri: otpauthUri(secret, user?.email ?? 'account') });
+  });
+
+  r.post('/2fa/enable', zValidator('json', z.object({ code: z.string().trim().length(6) })), async (c) => {
+    const user = await db.one<{ totp_pending_secret: string | null }>('SELECT totp_pending_secret FROM users WHERE id = $1', [c.var.userId]);
+    if (!user?.totp_pending_secret) throw new HTTPException(400, { message: 'Start setup again' });
+    const step = checkTotp(openSecret(user.totp_pending_secret), c.req.valid('json').code);
+    if (step === null) throw new HTTPException(400, { message: 'That code isn’t right. Check the time on your phone and try the newest code.' });
+    const codes = newBackupCodes();
+    await db.tx(async (t) => {
+      await t.query(
+        'UPDATE users SET totp_secret = totp_pending_secret, totp_pending_secret = NULL, totp_enabled_at = now(), totp_last_step = $2 WHERE id = $1',
+        [c.var.userId, step],
+      );
+      await t.query('DELETE FROM backup_codes WHERE user_id = $1', [c.var.userId]);
+      for (const code of codes) await t.query('INSERT INTO backup_codes (user_id, code_hash) VALUES ($1, $2)', [c.var.userId, hashBackupCode(code)]);
+    });
+    return c.json({ backupCodes: codes });
+  });
+
+  // Turning it off needs a code too, so someone holding an unlocked phone can't quietly remove it.
+  r.post('/2fa/disable', zValidator('json', z.object({ code: z.string().trim().min(6).max(20) })), async (c) => {
+    if (!(await checkSecondFactor(db, c.var.userId, c.req.valid('json').code))) throw new HTTPException(400, { message: 'That code isn’t right' });
+    await db.query(
+      'UPDATE users SET totp_secret = NULL, totp_pending_secret = NULL, totp_enabled_at = NULL, totp_last_step = NULL WHERE id = $1',
+      [c.var.userId],
+    );
+    await db.query('DELETE FROM backup_codes WHERE user_id = $1', [c.var.userId]);
+    return c.body(null, 204);
+  });
+
   /** Devices signed in to this account: one entry per session family, newest activity first. */
   r.get('/sessions', async (c) => {
     const rows = await db.query(
@@ -249,13 +290,4 @@ export function meRoutes(db: Db) {
   });
 
   return r;
-}
-
-/** Turns a user agent into something a person recognises, like "iPhone · Cliq app" or "Chrome on Windows". */
-export function describeDevice(ua: string): string {
-  if (!ua) return 'Unknown device';
-  const os = /iPhone|iPad/.test(ua) ? (ua.includes('iPad') ? 'iPad' : 'iPhone') : /Android/.test(ua) ? 'Android' : /Mac OS X|Macintosh/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : /Linux/.test(ua) ? 'Linux' : '';
-  if (/okhttp|CFNetwork|Expo|Darwin/i.test(ua) && !/Mozilla/.test(ua)) return `${os || 'Phone'} · Cliq app`;
-  const browser = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'Browser';
-  return os ? `${browser} on ${os}` : browser;
 }

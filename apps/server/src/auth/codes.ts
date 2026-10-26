@@ -9,9 +9,10 @@ const RESEND_AFTER_MS = 45_000;
 const hash = (code: string) => createHmac('sha256', config.jwtSecret).update(code).digest('base64url');
 
 export class CodeError extends Error {}
+export type CodePurpose = 'verify' | 'reset' | 'signin';
 
 /** Issues a fresh 6-digit code, replacing any earlier unused one for the same purpose. */
-export async function issueCode(db: Db, userId: string, purpose: 'verify' | 'reset') {
+export async function issueCode(db: Db, userId: string, purpose: CodePurpose) {
   const latest = await db.one<{ created_at: string }>(
     `SELECT created_at FROM email_codes WHERE user_id = $1 AND purpose = $2 ORDER BY created_at DESC LIMIT 1`,
     [userId, purpose],
@@ -29,7 +30,7 @@ export async function issueCode(db: Db, userId: string, purpose: 'verify' | 'res
 }
 
 /** Checks a code and marks it used. Each code allows a handful of guesses before it is burned. */
-export async function consumeCode(db: Db, userId: string, purpose: 'verify' | 'reset', code: string) {
+export async function consumeCode(db: Db, userId: string, purpose: CodePurpose, code: string) {
   const row = await db.one<{ id: string; code_hash: string; attempts: number; expires_at: string }>(
     `SELECT id, code_hash, attempts, expires_at FROM email_codes
      WHERE user_id = $1 AND purpose = $2 AND used_at IS NULL ORDER BY created_at DESC LIMIT 1`,

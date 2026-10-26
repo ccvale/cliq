@@ -141,4 +141,21 @@ export const migrations: string[] = [
   ALTER TABLE blocks ENABLE ROW LEVEL SECURITY;
   ALTER TABLE schema_migrations ENABLE ROW LEVEL SECURITY;
   `,
+  `
+  ALTER TABLE email_codes DROP CONSTRAINT email_codes_purpose_check;
+  ALTER TABLE email_codes ADD CONSTRAINT email_codes_purpose_check CHECK (purpose IN ('verify', 'reset', 'signin'));
+
+  ALTER TABLE users ADD COLUMN totp_secret TEXT;
+  ALTER TABLE users ADD COLUMN totp_pending_secret TEXT;
+  ALTER TABLE users ADD COLUMN totp_enabled_at TIMESTAMPTZ;
+  ALTER TABLE users ADD COLUMN totp_last_step BIGINT;
+
+  CREATE TABLE backup_codes (
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    code_hash TEXT NOT NULL,
+    used_at TIMESTAMPTZ,
+    PRIMARY KEY (user_id, code_hash)
+  );
+  ALTER TABLE backup_codes ENABLE ROW LEVEL SECURITY;
+  `,
 ];

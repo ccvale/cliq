@@ -116,6 +116,14 @@ export function AuthForm({ mode }: { mode: 'signUp' | 'signIn' }) {
           disabled={!email || !password}
           style={{ marginTop: 8 }}
         />
+        {!signUp ? (
+          <Button
+            label="Email me a sign-in code instead"
+            variant="secondary"
+            size="md"
+            onPress={() => router.push({ pathname: '/code-sign-in', params: { email } })}
+          />
+        ) : null}
         <Button
           label={signUp ? 'I already have an account' : 'New here? Create an account'}
           variant="ghost"

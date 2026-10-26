@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Platform, Share, StyleSheet, Switch, View } from 'react-native';
 import { router } from 'expo-router';
-import { Bell, Download, Fingerprint, KeyRound, LogOut, MessageCircle, MonitorSmartphone, Moon, ShieldOff } from 'lucide-react-native';
+import { Bell, Download, Fingerprint, KeyRound, LogOut, MessageCircle, MonitorSmartphone, Moon, ShieldCheck, ShieldOff } from 'lucide-react-native';
 import { LinkRow } from '@/components/LinkRow';
 import { Segmented } from '@/components/Segmented';
 import { Button } from '@/components/Button';
@@ -201,6 +201,12 @@ export default function SettingsScreen() {
       </Section>
 
       <Section title="Privacy and security">
+        <LinkRow
+          icon={<ShieldCheck size={20} color={colors.ink} />}
+          label="Two-step verification"
+          detail={me!.twoFactorEnabled ? 'On' : 'Off · add a code from an authenticator app'}
+          onPress={() => router.push('/two-factor-setup')}
+        />
         <LinkRow icon={<MonitorSmartphone size={20} color={colors.ink} />} label="Where you’re signed in" detail="See devices and sign them out" onPress={() => router.push('/devices')} />
         <LinkRow icon={<ShieldOff size={20} color={colors.ink} />} label="Blocked people" onPress={() => router.push('/blocked')} />
         <LinkRow icon={<Download size={20} color={colors.ink} />} label="Download my data" detail="Everything Cliq stores about you, as a file" onPress={() => void exportData()} />

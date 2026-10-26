@@ -18,9 +18,13 @@ export async function sendMail(mail: Mail) {
   await transport.sendMail({ from: config.mailFrom, ...mail });
 }
 
-export function codeEmail(kind: 'verify' | 'reset', code: string): Omit<Mail, 'to'> {
-  const subject = kind === 'verify' ? `${code} is your Cliq code` : `Reset your Cliq password: ${code}`;
-  const lead = kind === 'verify' ? 'Confirm your email to start meeting people on Cliq.' : 'Use this code to choose a new password.';
+export function codeEmail(kind: 'verify' | 'reset' | 'signin', code: string): Omit<Mail, 'to'> {
+  const subject = kind === 'reset' ? `Reset your Cliq password: ${code}` : `${code} is your Cliq code`;
+  const lead = {
+    verify: 'Confirm your email to start meeting people on Cliq.',
+    reset: 'Use this code to choose a new password.',
+    signin: 'Use this code to sign in to Cliq.',
+  }[kind];
   return {
     subject,
     text: `${lead}\n\nYour code: ${code}\n\nIt expires in 15 minutes. If you didn't ask for this, you can ignore this email.`,
@@ -29,5 +33,20 @@ export function codeEmail(kind: 'verify' | 'reset', code: string): Omit<Mail, 't
 <p style="font-size:16px;line-height:1.5">${lead}</p>
 <p style="font-size:34px;letter-spacing:8px;font-weight:600;margin:24px 0">${code}</p>
 <p style="font-size:13px;color:#8A848F">It expires in 15 minutes. If you didn't ask for this, you can ignore this email.</p></div>`,
+  };
+}
+
+/** Sent when an account signs in on a device it hasn't used before. */
+export function newDeviceEmail(device: string, when: Date): Omit<Mail, 'to'> {
+  const at = when.toUTCString();
+  const lead = `Your Cliq account just signed in on ${device}.`;
+  const tail = 'If this was you, there’s nothing to do. If not, open Cliq → Settings → Where you’re signed in to sign that device out, then change your password.';
+  return {
+    subject: 'New sign in to your Cliq account',
+    text: `${lead}\n${at}\n\n${tail}`,
+    html: `<div style="font-family:-apple-system,Segoe UI,sans-serif;max-width:420px;margin:auto;padding:32px;color:#17141B">
+<p style="font-family:Georgia,serif;font-style:italic;font-size:28px;margin:0 0 24px">cliq<span style="color:#FF6F91">.</span></p>
+<p style="font-size:16px;line-height:1.5">${lead}</p><p style="font-size:13px;color:#8A848F">${at}</p>
+<p style="font-size:14px;line-height:1.5">${tail}</p></div>`,
   };
 }

@@ -74,6 +74,7 @@ function Navigator() {
           <Stack.Screen name="settings" options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="blocked" options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="devices" options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="two-factor-setup" options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="verify-email" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
           <Stack.Screen
             name="match/[id]"

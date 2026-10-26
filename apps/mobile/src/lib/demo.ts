@@ -45,6 +45,7 @@ const state = {
   settings: { notifyMatches: true, notifyMessages: true, snoozedUntil: null } as Settings,
   blocked: [] as BlockedPerson[],
   lastSwipe: null as string | null,
+  twoFactor: false,
   swiped: new Set<string>(),
   liked: 0,
   matches: [] as { id: string; person: Person; matchedAt: string; replyIndex: number }[],
@@ -125,15 +126,50 @@ export const demoApi = {
     if (!/^\S+@\S+\.\S+$/.test(email)) throw fail('Enter a valid email address');
     if (password.length < 10) throw fail('Use at least 10 characters');
     reset(blankProfile(), email, false);
+    state.twoFactor = false;
     return tokens();
   },
   async signIn(email: string, _password: string) {
     await wait();
+    const keep = state.twoFactor;
     reset(demoProfile(), email || 'demo@cliq.app');
-    return tokens();
+    state.twoFactor = keep;
+    return keep ? { mfaRequired: true as const, mfaToken: 'demo' } : tokens();
   },
   async signInWithApple() {
     throw fail('Sign in with Apple works in the iOS app');
+  },
+  async sendSignInCode(_email: string) {
+    await wait();
+  },
+  async signInWithCode(email: string, code: string) {
+    await wait();
+    if (code !== DEMO_CODE) throw fail('That code isn’t right.');
+    const keep = state.twoFactor;
+    reset(demoProfile(), email || 'demo@cliq.app');
+    state.twoFactor = keep;
+    return keep ? { mfaRequired: true as const, mfaToken: 'demo' } : tokens();
+  },
+  async verifyTwoFactor(_token: string, code: string) {
+    await wait();
+    if (code !== DEMO_CODE) throw fail('That code isn’t right');
+    return tokens();
+  },
+  async twoFactorSetup() {
+    await wait();
+    const secret = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP';
+    return { secret, uri: `otpauth://totp/Cliq:${encodeURIComponent(state.email)}?secret=${secret}&issuer=Cliq` };
+  },
+  async twoFactorEnable(code: string) {
+    await wait();
+    if (code !== DEMO_CODE) throw fail('That code isn’t right. In the demo, use 246810.');
+    state.twoFactor = true;
+    return { backupCodes: ['k7d2-9xqm', 'p3vh-2rnc', 'w8jt-6fya', 'c4sz-mb7e', 'r2gx-5kdq', 'h9pn-t3wv', 'f6ub-8zej', 'y5qc-n2hs', 'd7mk-4rxa', 'u3we-9jpt'] };
+  },
+  async twoFactorDisable(code: string) {
+    await wait();
+    if (code !== DEMO_CODE) throw fail('That code isn’t right');
+    state.twoFactor = false;
   },
   async signInWithGoogle(_idToken: string) {
     throw fail('Google sign in needs the real API');
@@ -185,6 +221,7 @@ export const demoApi = {
       linkedApple: false,
       linkedGoogle: false,
       emailVerified: state.verified,
+      twoFactorEnabled: state.twoFactor,
       settings: { ...state.settings },
       profile: { ...state.profile },
       stats: { likesSent: state.liked, swipes: state.swiped.size, matches: state.matches.length },

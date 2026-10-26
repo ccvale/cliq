@@ -2,7 +2,7 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { secureStorage } from './storage';
 import { demoApi } from './demo';
-import type { BlockedPerson, Card, Device, MatchSummary, Me, Message, Profile, ProfilePatch } from './types';
+import type { AuthResult, BlockedPerson, Card, Device, MatchSummary, Me, Message, Profile, ProfilePatch } from './types';
 
 /** In development the API runs on the same machine as Metro, so reuse the host the device already reaches. */
 function resolveBaseUrl() {
@@ -108,15 +108,18 @@ async function request<T>(method: string, path: string, body?: unknown, retry = 
 
 const realApi = {
   signUp: (email: string, password: string) => request<Tokens>('POST', '/auth/signup', { email, password }),
-  signIn: (email: string, password: string) => request<Tokens>('POST', '/auth/signin', { email, password }),
+  signIn: (email: string, password: string) => request<AuthResult>('POST', '/auth/signin', { email, password }),
+  sendSignInCode: (email: string) => request<void>('POST', '/auth/code/send', { email }),
+  signInWithCode: (email: string, code: string) => request<AuthResult>('POST', '/auth/code/verify', { email, code }),
+  verifyTwoFactor: (mfaToken: string, code: string) => request<Tokens>('POST', '/auth/2fa', { mfaToken, code }),
   signInWithApple: (identityToken: string, givenName?: string) =>
-    request<Tokens>('POST', '/auth/apple', { identityToken, givenName }),
-  signInWithGoogle: (idToken: string) => request<Tokens>('POST', '/auth/google', { idToken }),
+    request<AuthResult>('POST', '/auth/apple', { identityToken, givenName }),
+  signInWithGoogle: (idToken: string) => request<AuthResult>('POST', '/auth/google', { idToken }),
   sendVerification: () => request<void>('POST', '/auth/email/send-verification'),
   verifyEmail: (code: string) => request<void>('POST', '/auth/email/verify', { code }),
   forgotPassword: (email: string) => request<void>('POST', '/auth/password/forgot', { email }),
   resetPassword: (email: string, code: string, password: string) =>
-    request<Tokens>('POST', '/auth/password/reset', { email, code, password }),
+    request<AuthResult>('POST', '/auth/password/reset', { email, code, password }),
   signOut: () => request<void>('POST', '/auth/signout'),
   changePassword: (current: string | undefined, next: string) => request<void>('POST', '/auth/password', { current, next }),
   deleteAccount: (password?: string) => request<void>('DELETE', '/auth/account', { password }),
@@ -127,6 +130,9 @@ const realApi = {
   deletePhoto: () => request<void>('DELETE', '/me/photo'),
   updateSettings: (patch: { notifyMatches?: boolean; notifyMessages?: boolean; snoozeDays?: number }) =>
     request<void>('PATCH', '/me/settings', patch),
+  twoFactorSetup: () => request<{ secret: string; uri: string }>('POST', '/me/2fa/setup'),
+  twoFactorEnable: (code: string) => request<{ backupCodes: string[] }>('POST', '/me/2fa/enable', { code }),
+  twoFactorDisable: (code: string) => request<void>('POST', '/me/2fa/disable', { code }),
   devices: () => request<{ sessions: Device[] }>('GET', '/me/sessions'),
   signOutDevice: (id: string) => request<void>('DELETE', `/me/sessions/${id}`),
   exportData: () => request<unknown>('GET', '/me/export'),

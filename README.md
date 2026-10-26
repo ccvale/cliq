@@ -41,6 +41,9 @@ docs/       Senior project report, test plan, redesign screenshots
 | Sessions | 15-minute HS256 access tokens plus single-use 30-day refresh tokens stored as SHA-256 hashes. Reusing a rotated refresh token revokes the whole session family |
 | Social sign-in | Apple and Google identity tokens verified against the providers' public keys |
 | Email | 6-digit codes to confirm your address and to reset a forgotten password. Codes are HMAC-hashed, expire in 15 minutes, allow 5 guesses and can be resent every 45 seconds. Swiping and messaging wait until the email is confirmed. "Forgot password" answers the same whether or not an account exists |
+| Passwordless | "Email me a sign-in code instead" signs you in with a one-time email code, same limits as the other codes |
+| Two-step verification | Optional authenticator-app codes (TOTP, works with Google Authenticator, 1Password, Authy and others) at every sign in, including Apple, Google and email-code sign in. The secret is encrypted at rest (AES-256-GCM), each code works once, and 10 single-use backup codes cover a lost phone |
+| New-device alerts | An email when your account signs in from a device it hasn't seen before |
 | Photos | Stored by the API itself (no bucket service). Type is checked from the file's bytes, capped at 2 MB, served with a versioned immutable cache URL |
 | Abuse | Rate limits per address and per account on sign in and resets, spam limits on messages and swipes, block and report, profiles reported by 3 different people are hidden pending review, teens (13–17) and adults never see each other |
 | Sessions | Revoking a device or changing your password cuts it off on its next request. Deleting your account asks for your password |
@@ -60,7 +63,7 @@ npm start     # starts both; scan the QR code with Expo Go, or press w for web
 
 Sign in with **demo@cliq.app / cliq-demo-2024**. The first run fills the local database with a dozen people around Mahwah, NJ, and Maya, Jordan, Theo, Riley and Diego have already liked the demo account, so swiping right on them makes a match. When you sign up a new account, the email code is printed in the terminal (set `SMTP_URL` to send real email).
 
-Two processes run side by side: the **app** (Expo, which hands the code to your phone) and the **API** (the backend with the database, sign in, matching and chat). `npm run demo` starts only the app with built-in sample data instead of the API (every email code is 246810), handy for a quick look.
+Two processes run side by side: the **app** (Expo, which hands the code to your phone) and the **API** (the backend with the database, sign in, matching and chat). `npm run demo` starts only the app with built-in sample data instead of the API (every email and authenticator code is 246810), handy for a quick look.
 
 On a phone, the app talks to the API on the same machine that runs Metro. Set `EXPO_PUBLIC_API_URL` to point it somewhere else.
 
@@ -80,7 +83,7 @@ For Google sign in, create OAuth client IDs in Google Cloud, put them in `apps/m
 ### Tests
 
 ```bash
-cd apps/server && npm test        # auth, token rotation, email codes, password reset, photos, discovery, matching, chat
+cd apps/server && npm test        # auth, token rotation, email codes, password reset, two-step verification, photos, discovery, matching, chat
 cd apps/mobile && npx tsc --noEmit
 ```
 

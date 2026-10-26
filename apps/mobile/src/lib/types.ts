@@ -26,10 +26,15 @@ export type Me = {
   linkedApple: boolean;
   linkedGoogle: boolean;
   emailVerified: boolean;
+  twoFactorEnabled: boolean;
   profile: Profile;
   settings: Settings;
   stats: { likesSent: number; swipes: number; matches: number };
 };
+
+export type Tokens = { accessToken: string; refreshToken: string };
+/** What a sign in returns: a session, or a challenge when two-step verification is on. */
+export type AuthResult = Tokens | { mfaRequired: true; mfaToken: string };
 
 export type Settings = { notifyMatches: boolean; notifyMessages: boolean; snoozedUntil: string | null };
 

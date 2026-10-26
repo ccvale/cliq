@@ -3,6 +3,7 @@ import { openDb, type Db } from '../src/db.js';
 import { createApp } from '../src/app.js';
 import { seed, DEMO_EMAIL, DEMO_PASSWORD } from '../src/seed.js';
 import { outbox } from '../src/lib/mailer.js';
+import { currentStep, totpAt } from '../src/auth/totp.js';
 
 process.env.DISABLE_PUSH = '1';
 process.env.RATE_LIMIT = 'off';
@@ -319,6 +320,66 @@ describe('safety and settings', () => {
     expect((await call('DELETE', '/auth/account', { password: 'wrong-password-9' }, a.token)).status).toBe(403);
     expect((await call('DELETE', '/auth/account', { password: 'a-strong-pass-1' }, a.token)).status).toBe(204);
     expect((await call('POST', '/auth/signin', { email: 'delete-me@x.com', password: 'a-strong-pass-1' })).status).toBe(401);
+  });
+});
+
+describe('more ways to sign in', () => {
+  it('signs in with an emailed code instead of a password', async () => {
+    await call('POST', '/auth/signup', { email: 'codeonly@x.com', password: 'a-strong-pass-1' });
+    expect((await call('POST', '/auth/code/send', { email: 'nobody-at-all@x.com' })).status).toBe(204);
+    await db.query(`UPDATE email_codes SET created_at = now() - interval '1 minute'`);
+    expect((await call('POST', '/auth/code/send', { email: 'codeonly@x.com' })).status).toBe(204);
+    const mail = [...outbox].reverse().find((m) => m.to === 'codeonly@x.com')!;
+    expect(mail.text).toContain('sign in');
+    const code = mail.text.match(/(\d{6})/)![1]!;
+    const res = await call('POST', '/auth/code/verify', { email: 'codeonly@x.com', code });
+    expect(res.status).toBe(200);
+    expect(res.json.accessToken).toBeTruthy();
+    expect((await call('POST', '/auth/code/verify', { email: 'codeonly@x.com', code })).status).toBe(400);
+  });
+
+  it('emails an alert when a new device signs in', async () => {
+    await app.request('/auth/signup', { method: 'POST', headers: { 'content-type': 'application/json', 'user-agent': 'Cliq/1 CFNetwork Darwin iPhone' }, body: JSON.stringify({ email: 'alerts@x.com', password: 'a-strong-pass-1' }) });
+    const before = outbox.filter((m) => m.to === 'alerts@x.com' && m.subject.startsWith('New sign in')).length;
+    await app.request('/auth/signin', { method: 'POST', headers: { 'content-type': 'application/json', 'user-agent': 'Cliq/1 CFNetwork Darwin iPhone' }, body: JSON.stringify({ email: 'alerts@x.com', password: 'a-strong-pass-1' }) });
+    await app.request('/auth/signin', { method: 'POST', headers: { 'content-type': 'application/json', 'user-agent': 'Mozilla/5.0 (Windows NT 10.0) Chrome/140.0' }, body: JSON.stringify({ email: 'alerts@x.com', password: 'a-strong-pass-1' }) });
+    const alerts = outbox.filter((m) => m.to === 'alerts@x.com' && m.subject.startsWith('New sign in'));
+    expect(alerts.length - before).toBe(1);
+    expect(alerts.at(-1)!.text).toContain('Chrome on Windows');
+  });
+
+  it('turns on two-step verification and requires it at sign in', async () => {
+    const email = 'twostep@x.com';
+    const s = (await call('POST', '/auth/signup', { email, password: 'a-strong-pass-1' })).json;
+    const setup = (await call('POST', '/me/2fa/setup', undefined, s.accessToken)).json;
+    expect(setup.uri).toMatch(/^otpauth:\/\/totp\/Cliq/);
+    expect((await call('POST', '/me/2fa/enable', { code: '000000' === totpAt(setup.secret, currentStep()) ? '111111' : '000000' }, s.accessToken)).status).toBe(400);
+    const enabled = await call('POST', '/me/2fa/enable', { code: totpAt(setup.secret, currentStep()) }, s.accessToken);
+    expect(enabled.json.backupCodes).toHaveLength(10);
+    expect((await call('GET', '/me', undefined, s.accessToken)).json.twoFactorEnabled).toBe(true);
+
+    // Password alone now only gets a short-lived challenge, which is no good as an access token.
+    const first = (await call('POST', '/auth/signin', { email, password: 'a-strong-pass-1' })).json;
+    expect(first.accessToken).toBeUndefined();
+    expect(first.mfaRequired).toBe(true);
+    expect((await call('GET', '/me', undefined, first.mfaToken)).status).toBe(401);
+
+    // The code used to enable can't be replayed; the next step's code works once.
+    expect((await call('POST', '/auth/2fa', { mfaToken: first.mfaToken, code: totpAt(setup.secret, currentStep()) })).status).toBe(400);
+    const next = totpAt(setup.secret, currentStep() + 1);
+    const ok = await call('POST', '/auth/2fa', { mfaToken: first.mfaToken, code: next });
+    expect(ok.json.accessToken).toBeTruthy();
+    expect((await call('POST', '/auth/2fa', { mfaToken: first.mfaToken, code: next })).status).toBe(400);
+
+    // Backup codes work once each.
+    const backup = enabled.json.backupCodes[0];
+    expect((await call('POST', '/auth/2fa', { mfaToken: first.mfaToken, code: backup.toUpperCase() })).status).toBe(200);
+    expect((await call('POST', '/auth/2fa', { mfaToken: first.mfaToken, code: backup })).status).toBe(400);
+
+    // Turning it off needs a code.
+    expect((await call('POST', '/me/2fa/disable', { code: '123456' }, ok.json.accessToken)).status).toBe(400);
+    expect((await call('POST', '/me/2fa/disable', { code: enabled.json.backupCodes[1] }, ok.json.accessToken)).status).toBe(204);
+    expect((await call('POST', '/auth/signin', { email, password: 'a-strong-pass-1' })).json.accessToken).toBeTruthy();
   });
 });
 
