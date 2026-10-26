@@ -26,7 +26,9 @@ docs/       Senior project report, test plan, redesign screenshots
 - **Onboarding** in seven short steps that save as you go: name, birthday, gig, interests, palette (with a live card preview), bio, location.
 - **Discover**: a physics-based swipe deck with haptics, "Let's hang" / "Not now" stamps, tap buttons for people who'd rather not drag, and the original session stats.
 - **It's mutual**: a match moment where both palettes meet, then straight into chat.
-- **Friends and chat**: realtime messages over WebSockets, typing indicator, read receipts, grouped bubbles tinted with your palette, unmatch, and report-and-block.
+- **Friends and chat**: realtime messages over WebSockets, typing indicator, read receipts, online status ("Online now", "Active 5 minutes ago"), photos and GIFs, grouped bubbles tinted with your palette, unmatch, and report-and-block.
+- **More than a card** (from the original wishlist): answer up to three prompts, feature a song (with a 30 second preview), TV show or movie from Apple's catalog, and earn achievements whose badges show on your card. Tap the arrow on a card to see someone's whole profile.
+- **Distance from where you are**: when you open Cliq, your spot follows you (only if you've allowed location, and you can switch it off) instead of staying at a fixed home location.
 - **Your palette themes everything**, just like the original: buttons, accents, sliders and chat bubbles all follow the two colors you pick.
 - **Optional photo**: pick or take one, cropped to the card's shape and re-encoded on device (which also strips GPS metadata), then faded into your palette so the colors still lead.
 - **Native touches**: Face ID / fingerprint app lock, Keychain/Keystore token storage, Sign in with Apple and Google, one-time-code autofill for email codes, push notifications for matches and messages, on-device reverse geocoding, light and dark mode.
@@ -44,6 +46,9 @@ docs/       Senior project report, test plan, redesign screenshots
 | Passwordless | "Email me a sign-in code instead" signs you in with a one-time email code, same limits as the other codes |
 | Two-step verification | Optional authenticator-app codes (TOTP, works with Google Authenticator, 1Password, Authy and others) at every sign in, including Apple, Google and email-code sign in. The secret is encrypted at rest (AES-256-GCM), each code works once, and 10 single-use backup codes cover a lost phone |
 | New-device alerts | An email when your account signs in from a device it hasn't seen before |
+| Chat media | Photos are shrunk and re-encoded on device; GIFs from your library are sent as-is (up to 6 MB). Both are stored by the API, served from unguessable URLs, and disappear when either person unmatches. GIF search uses GIPHY when `GIPHY_API_KEY` is set |
+| Featured picks | Searched through Apple's free iTunes Search API (no key). Only Apple artwork and preview links are accepted, so a profile can't load arbitrary images on other people's phones |
+| Achievements | Worked out from what you've actually done (matches, messages, profiles seen and so on), so there's nothing to award or backfill |
 | Photos | Stored by the API itself (no bucket service). Type is checked from the file's bytes, capped at 2 MB, served with a versioned immutable cache URL |
 | Abuse | Rate limits per address and per account on sign in and resets, spam limits on messages and swipes, block and report, profiles reported by 3 different people are hidden pending review, teens (13–17) and adults never see each other |
 | Sessions | Revoking a device or changing your password cuts it off on its next request. Deleting your account asks for your password |

@@ -71,6 +71,9 @@ export default function Onboarding() {
       city: city || 'Your city',
       distance: 'Nearby',
       photoUrl: null,
+      prompts: [],
+      featured: null,
+      badges: [],
     }),
     [name, age, bio, gigTitle, gigPlace, interests, palette, city],
   );

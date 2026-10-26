@@ -23,6 +23,7 @@ type Props = {
   width: number;
   height: number;
   onSwiped: (card: Card, liked: boolean) => void;
+  onOpen?: (card: Card) => void;
   onEmpty?: () => void;
 };
 
@@ -32,7 +33,7 @@ const haptic = (kind: 'tick' | 'commit') => {
   else void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 };
 
-export const SwipeDeck = forwardRef<DeckHandle, Props>(function SwipeDeck({ cards, width, height, onSwiped }, ref) {
+export const SwipeDeck = forwardRef<DeckHandle, Props>(function SwipeDeck({ cards, width, height, onSwiped, onOpen }, ref) {
   const [index, setIndex] = useState(0);
   const x = useSharedValue(0);
   const y = useSharedValue(0);
@@ -123,7 +124,7 @@ export const SwipeDeck = forwardRef<DeckHandle, Props>(function SwipeDeck({ card
             return (
               <GestureDetector key={card.id} gesture={pan}>
                 <Animated.View style={[size, topStyle]}>
-                  <ProfileCard card={card} style={{ flex: 1 }} />
+                  <ProfileCard card={card} style={{ flex: 1 }} onMore={onOpen ? () => onOpen(card) : undefined} />
                   <Animated.View style={[styles.stamp, styles.likeStamp, likeStamp]} pointerEvents="none">
                     <Txt style={styles.stampText}>Let’s hang ✦</Txt>
                   </Animated.View>

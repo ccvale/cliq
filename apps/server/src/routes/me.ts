@@ -3,13 +3,16 @@ import { HTTPException } from 'hono/http-exception';
 import { validate as zValidator } from '../lib/validate.js';
 import { z } from 'zod';
 import type { Db, Row } from '../db.js';
-import { requireAuth, type AuthEnv } from '../auth/middleware.js';
+import { rateLimit, requireAuth, type AuthEnv } from '../auth/middleware.js';
 import { GENDERS, INTERESTS, PALETTE_IDS } from '../lib/catalog.js';
 import { ageOn, bandBounds } from '../lib/age.js';
 import { coarsen } from '../lib/geo.js';
 import { photoUrl } from './photos.js';
 import { describeDevice } from '../lib/device.js';
 import { checkSecondFactor } from '../auth/second-factor.js';
+import { featuredSchema, searchCatalog, type Featured } from '../lib/featured.js';
+import { achievementsFor } from '../lib/achievements.js';
+import { config } from '../config.js';
 import { checkTotp, hashBackupCode, newBackupCodes, newTotpSecret, openSecret, otpauthUri, sealSecret } from '../auth/totp.js';
 
 export const toProfile = (p: Row) => ({
@@ -29,6 +32,8 @@ export const toProfile = (p: Row) => ({
   maxDistanceMi: p.max_distance_mi as number,
   onboarded: p.onboarded as boolean,
   photoUrl: photoUrl(p.user_id, p.photo_at),
+  prompts: (p.prompts as { question: string; answer: string }[] | undefined) ?? [],
+  featured: (p.featured as Featured | null | undefined) ?? null,
 });
 
 const profilePatch = z
@@ -45,6 +50,11 @@ const profilePatch = z
     ageMin: z.number().int().min(13).max(120),
     ageMax: z.number().int().min(13).max(120),
     maxDistanceMi: z.number().int().min(1).max(150),
+    prompts: z
+      .array(z.object({ question: z.string().trim().min(1).max(100), answer: z.string().trim().min(1).max(160) }))
+      .max(3)
+      .refine((a) => new Set(a.map((p) => p.question)).size === a.length, 'Pick different questions'),
+    featured: featuredSchema.nullable(),
   })
   .partial();
 
@@ -59,7 +69,7 @@ export function meRoutes(db: Db) {
     );
 
   r.get('/', async (c) => {
-    const user = await db.one('SELECT id, email, password_hash IS NOT NULL AS has_password, apple_sub IS NOT NULL AS apple, google_sub IS NOT NULL AS google, email_verified_at IS NOT NULL AS verified, notify_matches, notify_messages, totp_enabled_at IS NOT NULL AS mfa FROM users WHERE id = $1', [
+    const user = await db.one('SELECT id, email, password_hash IS NOT NULL AS has_password, apple_sub IS NOT NULL AS apple, google_sub IS NOT NULL AS google, email_verified_at IS NOT NULL AS verified, notify_matches, notify_messages, live_location, show_activity, totp_enabled_at IS NOT NULL AS mfa FROM users WHERE id = $1', [
       c.var.userId,
     ]);
     if (!user) throw new HTTPException(401, { message: 'Account no longer exists' });
@@ -76,6 +86,8 @@ export function meRoutes(db: Db) {
       settings: {
         notifyMatches: user.notify_matches,
         notifyMessages: user.notify_messages,
+        liveLocation: user.live_location,
+        showActivity: user.show_activity,
         snoozedUntil: profile.snoozed_until && new Date(profile.snoozed_until) > new Date() ? new Date(profile.snoozed_until).toISOString() : null,
       },
       id: user.id,
@@ -85,6 +97,7 @@ export function meRoutes(db: Db) {
       linkedGoogle: user.google,
       emailVerified: user.verified,
       twoFactorEnabled: user.mfa,
+      features: { gifs: !!config.giphyApiKey },
       profile: toProfile(profile),
       stats: { likesSent: stats!.likes_sent, swipes: stats!.swipes, matches: stats!.matches },
     });
@@ -117,6 +130,8 @@ export function meRoutes(db: Db) {
       }
       next.birthday = body.birthday;
     }
+    if (body.prompts !== undefined) next.prompts = body.prompts;
+    if (body.featured !== undefined) next.featured = body.featured;
     if (body.maxDistanceMi !== undefined) next.max_distance_mi = body.maxDistanceMi;
     if (body.ageMin !== undefined) next.age_min = body.ageMin;
     if (body.ageMax !== undefined) next.age_max = body.ageMax;
@@ -134,11 +149,13 @@ export function meRoutes(db: Db) {
 
     const saved = await db.one(
       `UPDATE profiles SET display_name=$2, bio=$3, birthday=$4, gender=$5, gig_title=$6, gig_place=$7, interests=$8,
-        palette=$9, lat=$10, lng=$11, city=$12, age_min=$13, age_max=$14, max_distance_mi=$15, onboarded=$16, updated_at=now()
+        palette=$9, lat=$10, lng=$11, city=$12, age_min=$13, age_max=$14, max_distance_mi=$15, onboarded=$16,
+        prompts=$17, featured=$18, updated_at=now()
        WHERE user_id=$1 RETURNING *, (SELECT updated_at FROM photos WHERE user_id = $1) AS photo_at`,
       [
         c.var.userId, next.display_name, next.bio, next.birthday, next.gender, next.gig_title, next.gig_place,
         next.interests, next.palette, next.lat, next.lng, next.city, next.age_min, next.age_max, next.max_distance_mi, next.onboarded,
+        JSON.stringify(next.prompts ?? []), next.featured ? JSON.stringify(next.featured) : null,
       ],
     );
     return c.json(toProfile(saved!));
@@ -166,6 +183,8 @@ export function meRoutes(db: Db) {
         .object({
           notifyMatches: z.boolean(),
           notifyMessages: z.boolean(),
+          liveLocation: z.boolean(),
+          showActivity: z.boolean(),
           // Days to stay hidden from Discover; 0 shows you again. 3650 is "until I turn it off".
           snoozeDays: z.number().int().min(0).max(3650),
         })
@@ -179,6 +198,12 @@ export function meRoutes(db: Db) {
           [c.var.userId, body.notifyMatches ?? null, body.notifyMessages ?? null],
         );
       }
+      if (body.liveLocation !== undefined || body.showActivity !== undefined) {
+        await db.query(
+          'UPDATE users SET live_location = coalesce($2, live_location), show_activity = coalesce($3, show_activity) WHERE id = $1',
+          [c.var.userId, body.liveLocation ?? null, body.showActivity ?? null],
+        );
+      }
       if (body.snoozeDays !== undefined) {
         await db.query(
           `UPDATE profiles SET snoozed_until = CASE WHEN $2::int = 0 THEN NULL ELSE now() + make_interval(days => $2::int) END WHERE user_id = $1`,
@@ -186,6 +211,26 @@ export function meRoutes(db: Db) {
         );
       }
       return c.body(null, 204);
+    },
+  );
+
+  r.get('/achievements', async (c) => {
+    const all = await achievementsFor(db, [c.var.userId]);
+    return c.json({ achievements: all.get(c.var.userId) ?? [] });
+  });
+
+  // Search for a song, show or movie to feature on your profile.
+  r.get(
+    '/featured-search',
+    rateLimit({ limit: 40, windowMs: 60_000, perUser: true }),
+    zValidator('query', z.object({ kind: z.enum(['song', 'show', 'movie']), q: z.string().trim().min(1).max(80) })),
+    async (c) => {
+      const { kind, q } = c.req.valid('query');
+      try {
+        return c.json({ results: await searchCatalog(kind, q) });
+      } catch {
+        throw new HTTPException(502, { message: 'Search isn’t working right now. Try again in a moment.' });
+      }
     },
   );
 

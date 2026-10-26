@@ -24,3 +24,33 @@ export async function locateMe(): Promise<Place> {
   }
   return { lat, lng, city };
 }
+
+let lastSent: { lat: number; lng: number; at: number } | null = null;
+const kmBetween = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) =>
+  Math.hypot(a.lat - b.lat, (a.lng - b.lng) * Math.cos((a.lat * Math.PI) / 180)) * 111;
+
+/**
+ * Where you are right now, for keeping distances current. Never shows a permission prompt (it only
+ * runs if you already allowed location) and skips the update when you haven't moved about a kilometre.
+ */
+export async function currentPlaceIfMoved(): Promise<Place | null> {
+  if (DEMO) return null;
+  const { status } = await Location.getForegroundPermissionsAsync();
+  if (status !== 'granted') return null;
+  if (lastSent && Date.now() - lastSent.at < 10 * 60_000) return null;
+  const pos = (await Location.getLastKnownPositionAsync({ maxAge: 10 * 60_000 })) ?? (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low }));
+  const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+  if (lastSent && kmBetween(lastSent, here) < 1) {
+    lastSent = { ...lastSent, at: Date.now() };
+    return null;
+  }
+  lastSent = { ...here, at: Date.now() };
+  let city = '';
+  if (Platform.OS !== 'web') {
+    try {
+      const [place] = await Location.reverseGeocodeAsync({ latitude: here.lat, longitude: here.lng });
+      if (place) city = [place.city ?? place.subregion, place.region].filter(Boolean).join(', ');
+    } catch {}
+  }
+  return { ...here, city };
+}

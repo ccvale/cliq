@@ -2,7 +2,7 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { secureStorage } from './storage';
 import { demoApi } from './demo';
-import type { AuthResult, BlockedPerson, Card, Device, MatchSummary, Me, Message, Profile, ProfilePatch } from './types';
+import type { Achievement, AuthResult, BlockedPerson, Card, Device, Featured, FeaturedKind, Gif, MatchSummary, Me, Media, Message, Profile, ProfilePatch } from './types';
 
 /** In development the API runs on the same machine as Metro, so reuse the host the device already reaches. */
 function resolveBaseUrl() {
@@ -128,8 +128,11 @@ const realApi = {
   updateProfile: (patch: ProfilePatch) => request<Profile>('PATCH', '/me/profile', patch),
   uploadPhoto: (photo: Blob) => request<{ photoUrl: string }>('PUT', '/me/photo', photo),
   deletePhoto: () => request<void>('DELETE', '/me/photo'),
-  updateSettings: (patch: { notifyMatches?: boolean; notifyMessages?: boolean; snoozeDays?: number }) =>
+  updateSettings: (patch: { notifyMatches?: boolean; notifyMessages?: boolean; liveLocation?: boolean; showActivity?: boolean; snoozeDays?: number }) =>
     request<void>('PATCH', '/me/settings', patch),
+  achievements: () => request<{ achievements: Achievement[] }>('GET', '/me/achievements'),
+  searchFeatured: (kind: FeaturedKind, q: string) =>
+    request<{ results: Featured[] }>('GET', `/me/featured-search?kind=${kind}&q=${encodeURIComponent(q)}`),
   twoFactorSetup: () => request<{ secret: string; uri: string }>('POST', '/me/2fa/setup'),
   twoFactorEnable: (code: string) => request<{ backupCodes: string[] }>('POST', '/me/2fa/enable', { code }),
   twoFactorDisable: (code: string) => request<void>('POST', '/me/2fa/disable', { code }),
@@ -152,6 +155,11 @@ const realApi = {
       `/matches/${matchId}/messages${before ? `?before=${encodeURIComponent(before)}` : ''}`,
     ),
   send: (matchId: string, body: string) => request<Message>('POST', `/matches/${matchId}/messages`, { body }),
+  sendGif: (matchId: string, gif: Media) =>
+    request<Message>('POST', `/matches/${matchId}/messages`, { gif: { url: gif.url, width: gif.width, height: gif.height } }),
+  sendImage: (matchId: string, image: Blob, width: number, height: number) =>
+    request<Message>('POST', `/matches/${matchId}/images?w=${Math.round(width)}&h=${Math.round(height)}`, image),
+  searchGifs: (q: string) => request<{ gifs: Gif[] }>('GET', `/gifs?q=${encodeURIComponent(q)}`),
   markRead: (matchId: string) => request<void>('POST', `/matches/${matchId}/read`),
   unmatch: (matchId: string) => request<void>('DELETE', `/matches/${matchId}`),
   report: (targetId: string, reason: string) => request<void>('POST', '/reports', { targetId, reason }),

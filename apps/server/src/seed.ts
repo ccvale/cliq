@@ -21,20 +21,22 @@ type Person = {
   palette: [string, string];
   city: string;
   likesDemo?: boolean;
+  prompts?: [string, string][];
+  featured?: [kind: 'song' | 'show' | 'movie', title: string, subtitle: string];
 };
 
 const people: Person[] = [
-  { name: 'Maya', age: 23, title: 'Barista', place: 'Ramapo College', bio: 'Latte art in progress. Looking for a hiking buddy who doesn’t mind early starts.', interests: ['Hiking', 'Coffee', 'Photography', 'Film'], palette: ['apricot', 'rose'], city: 'Mahwah, NJ', likesDemo: true },
-  { name: 'Jordan', age: 25, title: 'Software engineer', place: 'Prudential', bio: 'Board game collection is getting out of hand. Need people to play them with.', interests: ['Board games', 'Coding', 'Cooking', 'Chess'], palette: ['jade', 'lagoon'], city: 'Ramsey, NJ', likesDemo: true },
+  { name: 'Maya', age: 23, title: 'Barista', place: 'Ramapo College', bio: 'Latte art in progress. Looking for a hiking buddy who doesn’t mind early starts.', interests: ['Hiking', 'Coffee', 'Photography', 'Film'], palette: ['apricot', 'rose'], city: 'Mahwah, NJ', likesDemo: true, prompts: [['My ideal Saturday', 'Sunrise hike at Ramapo Reservation, then pancakes. In that order.'], ['Teach me how to', 'Develop film at home. I have the chemicals, just not the courage.']], featured: ['song', 'Dreams', 'Fleetwood Mac'] },
+  { name: 'Jordan', age: 25, title: 'Software engineer', place: 'Prudential', bio: 'Board game collection is getting out of hand. Need people to play them with.', interests: ['Board games', 'Coding', 'Cooking', 'Chess'], palette: ['jade', 'lagoon'], city: 'Ramsey, NJ', likesDemo: true, prompts: [['A hill I will die on', 'Catan is better with five players.']], featured: ['show', 'The Bear', 'Comedy'] },
   { name: 'Priya', age: 22, title: 'Student', place: 'Ramapo College', bio: 'Nursing student who runs to stay sane. Always down for a farmers market.', interests: ['Running', 'Baking', 'Podcasts', 'Gardening'], palette: ['orchid', 'iris'], city: 'Mahwah, NJ' },
-  { name: 'Theo', age: 27, title: 'Line cook', place: 'The Grand Café', bio: 'I will feed you. In exchange, come to a show with me.', interests: ['Cooking', 'Concerts', 'Guitar', 'Skating'], palette: ['coral', 'honey'], city: 'Suffern, NY', likesDemo: true },
+  { name: 'Theo', age: 27, title: 'Line cook', place: 'The Grand Café', bio: 'I will feed you. In exchange, come to a show with me.', interests: ['Cooking', 'Concerts', 'Guitar', 'Skating'], palette: ['coral', 'honey'], city: 'Suffern, NY', likesDemo: true, prompts: [['Let’s get together and', 'Find the best taco truck in Rockland County.']], featured: ['song', 'Kids', 'MGMT'] },
   { name: 'Sam', age: 24, title: 'Graphic designer', place: 'Freelance', bio: 'Thrifting on weekends, sketching on weekdays. Let’s go to a museum.', interests: ['Painting', 'Thrifting', 'Fashion', 'Photography'], palette: ['violet', 'rose'], city: 'Ridgewood, NJ' },
   { name: 'Alex', age: 26, title: 'Physical therapist', place: 'Valley Hospital', bio: 'Climbing gym regular. I can teach you to belay.', interests: ['Climbing', 'Yoga', 'Hiking', 'Travel'], palette: ['sage', 'jade'], city: 'Paramus, NJ' },
-  { name: 'Riley', age: 21, title: 'Student', place: 'Ramapo College', bio: 'New to the area and looking for a crew for trivia night.', interests: ['Comedy', 'Video games', 'Anime', 'Music'], palette: ['sky', 'iris'], city: 'Mahwah, NJ', likesDemo: true },
+  { name: 'Riley', age: 21, title: 'Student', place: 'Ramapo College', bio: 'New to the area and looking for a crew for trivia night.', interests: ['Comedy', 'Video games', 'Anime', 'Music'], palette: ['sky', 'iris'], city: 'Mahwah, NJ', likesDemo: true, prompts: [['I’ll know we’ll click if', 'You laugh at my trivia team name.'], ['Currently obsessed with', 'Rhythm games and cold brew.']], featured: ['movie', 'Spirited Away', '2001 · Anime'] },
   { name: 'Nina', age: 28, title: 'Teacher', place: 'Ramsey High', bio: 'Book club founder. We read, we eat, we gossip about fictional people.', interests: ['Reading', 'Writing', 'Baking', 'Theater'], palette: ['rose', 'apricot'], city: 'Ramsey, NJ' },
   { name: 'Marcus', age: 24, title: 'Sound engineer', place: 'Studio B', bio: 'Vinyl, synths, and late-night diners.', interests: ['Music', 'Piano', 'Concerts', 'Podcasts'], palette: ['denim', 'slate'], city: 'Nyack, NY' },
   { name: 'Leah', age: 23, title: 'Vet tech', place: 'Mahwah Animal Hospital', bio: 'My dog needs friends and so do I.', interests: ['Pets', 'Hiking', 'Volunteering', 'Coffee'], palette: ['honey', 'sage'], city: 'Mahwah, NJ' },
-  { name: 'Diego', age: 25, title: 'Data analyst', place: 'BMW of North America', bio: 'Pickup soccer Sundays. All skill levels, mostly mine.', interests: ['Soccer', 'Coding', 'Travel', 'Film'], palette: ['lagoon', 'sky'], city: 'Woodcliff Lake, NJ', likesDemo: true },
+  { name: 'Diego', age: 25, title: 'Data analyst', place: 'BMW of North America', bio: 'Pickup soccer Sundays. All skill levels, mostly mine.', interests: ['Soccer', 'Coding', 'Travel', 'Film'], palette: ['lagoon', 'sky'], city: 'Woodcliff Lake, NJ', likesDemo: true, prompts: [['I’m weirdly good at', 'Guessing how long a commute will take, to the minute.']], featured: ['movie', 'Inception', '2010 · Sci-Fi'] },
   { name: 'Hana', age: 22, title: 'Student', place: 'Ramapo College', bio: 'Snowboarding in winter, surfing in summer, complaining about both.', interests: ['Snowboarding', 'Surfing', 'Photography', 'Travel'], palette: ['sky', 'lagoon'], city: 'Mahwah, NJ' },
 ];
 
@@ -58,6 +60,13 @@ export async function seed(db: Db, center = { lat: 41.09, lng: -74.15 }) {
        VALUES ($1,$2,$3,$4,'unspecified',$5,$6,$7,$8,$9,$10,$11,18,40,40,true)`,
       [u!.id, p.name, p.bio, birthdayFor(p.age, i), p.title, p.place, p.interests, p.palette, lat, lng, p.city],
     );
+    // Seeded favourites have no artwork or preview, since those links would point at real catalog entries.
+    const featured = p.featured && { kind: p.featured[0], title: p.featured[1], subtitle: p.featured[2], artworkUrl: null, previewUrl: null, link: null };
+    await db.query('UPDATE profiles SET prompts = $2, featured = $3 WHERE user_id = $1', [
+      u!.id,
+      JSON.stringify((p.prompts ?? []).map(([question, answer]) => ({ question, answer }))),
+      featured ? JSON.stringify(featured) : null,
+    ]);
     return u!.id;
   };
 

@@ -4,6 +4,7 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import { api, session } from '@/lib/api';
 import { realtime } from '@/lib/realtime';
 import { registerForPush } from '@/lib/push';
+import { currentPlaceIfMoved } from '@/lib/location';
 import { secureStorage } from '@/lib/storage';
 import { router } from 'expo-router';
 import type { AuthResult, Me, Profile } from '@/lib/types';
@@ -47,7 +48,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setStatus('signedIn');
     realtime.start();
     if (next.profile.onboarded) void registerForPush({ prompt: false });
+    if (next.profile.onboarded && next.settings.liveLocation) void followMe(next);
   }, []);
+
+  /** Moves your spot to where you are now, so distances are from here rather than a fixed home location. */
+  const followMe = useCallback(async (current: Me) => {
+    try {
+      const place = await currentPlaceIfMoved();
+      if (!place) return;
+      const profile = await api.updateProfile({ location: { lat: place.lat, lng: place.lng, city: place.city || current.profile.city } });
+      setMe((m) => (m ? { ...m, profile } : m));
+    } catch {
+      // Location is a nice-to-have here; the saved spot still works.
+    }
+  }, []);
+  const meRef = useRef<Me | null>(null);
+  meRef.current = me;
 
   useEffect(() => {
     session.onSignedOut(() => void reset());
@@ -67,6 +83,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'background') backgroundedAt.current = Date.now();
+      const current = meRef.current;
+      if (state === 'active' && current?.profile.onboarded && current.settings.liveLocation) void followMe(current);
       if (state === 'active' && backgroundedAt.current) {
         if (biometricLock && Date.now() - backgroundedAt.current > LOCK_AFTER_MS) setLocked(true);
         backgroundedAt.current = null;

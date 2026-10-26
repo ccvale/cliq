@@ -1,7 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { api } from '@/lib/api';
 import { realtime } from '@/lib/realtime';
-import type { MatchSummary } from '@/lib/types';
+import type { MatchSummary, Message } from '@/lib/types';
+
+export const previewOf = (m: Pick<Message, 'kind' | 'body'>) => (m.kind === 'image' ? '📷 Photo' : m.kind === 'gif' ? 'GIF' : m.body);
 import { useSession } from './session';
 
 type MatchesValue = {
@@ -33,7 +35,11 @@ export function MatchesProvider({ children }: { children: ReactNode }) {
     if (status !== 'signedIn') return;
     void refresh();
     return realtime.subscribe((event) => {
-      if (event.type === 'match:new') void refresh();
+      // A reconnect may have missed presence changes, so pick up fresh state.
+      if (event.type === 'match:new' || event.type === 'ready') void refresh();
+      if (event.type === 'presence') {
+        setMatches((list) => list.map((m) => (m.person.id === event.userId ? { ...m, online: event.online, lastActiveAt: event.lastActiveAt } : m)));
+      }
       if (event.type === 'match:ended') setMatches((list) => list.filter((m) => m.id !== event.matchId));
       if (event.type === 'message:new') {
         const { message } = event;
@@ -46,7 +52,7 @@ export function MatchesProvider({ children }: { children: ReactNode }) {
           const fromMe = message.senderId === me?.id;
           const updated: MatchSummary = {
             ...found,
-            lastMessage: { body: message.body, fromMe, at: message.createdAt },
+            lastMessage: { body: previewOf(message), fromMe, at: message.createdAt },
             unread: fromMe ? found.unread : found.unread + 1,
           };
           return [updated, ...list.filter((m) => m.id !== found.id)];

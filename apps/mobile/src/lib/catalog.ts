@@ -31,3 +31,20 @@ export const INTERESTS: Record<string, string> = {
 };
 export const INTEREST_NAMES = Object.keys(INTERESTS);
 export const MAX_INTERESTS = 5;
+
+/** Questions people can answer on their profile. Answers are free text, up to 160 characters. */
+export const PROMPTS = [
+  'My ideal Saturday',
+  'Let’s get together and',
+  'I’ll know we’ll click if',
+  'A hill I will die on',
+  'The best spot around here is',
+  'I’m weirdly good at',
+  'Teach me how to',
+  'Currently obsessed with',
+  'Ask me about',
+  'A green flag in a friend',
+  'My go-to karaoke song',
+  'Most spontaneous thing I’ve done',
+];
+export const MAX_PROMPTS = 3;

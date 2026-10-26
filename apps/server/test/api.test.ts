@@ -4,6 +4,8 @@ import { createApp } from '../src/app.js';
 import { seed, DEMO_EMAIL, DEMO_PASSWORD } from '../src/seed.js';
 import { outbox } from '../src/lib/mailer.js';
 import { currentStep, totpAt } from '../src/auth/totp.js';
+import { searchCatalog } from '../src/lib/featured.js';
+import { Hub } from '../src/realtime.js';
 
 process.env.DISABLE_PUSH = '1';
 process.env.RATE_LIMIT = 'off';
@@ -380,6 +382,126 @@ describe('more ways to sign in', () => {
     expect((await call('POST', '/me/2fa/disable', { code: '123456' }, ok.json.accessToken)).status).toBe(400);
     expect((await call('POST', '/me/2fa/disable', { code: enabled.json.backupCodes[1] }, ok.json.accessToken)).status).toBe(204);
     expect((await call('POST', '/auth/signin', { email, password: 'a-strong-pass-1' })).json.accessToken).toBeTruthy();
+  });
+});
+
+describe('wishlist', () => {
+  const fresh = async (email: string, extra: object = {}) => {
+    const s = (await call('POST', '/auth/signup', { email, password: 'a-strong-pass-1' })).json;
+    await db.query('UPDATE users SET email_verified_at = now() WHERE lower(email) = $1', [email]);
+    await call('PATCH', '/me/profile', {
+      displayName: email.split('@')[0], birthday: '1997-05-05', interests: ['Film'],
+      location: { lat: 41.2, lng: -74.3, city: 'Somewhere, NJ' }, ...extra,
+    }, s.accessToken);
+    const me = (await call('GET', '/me', undefined, s.accessToken)).json;
+    return { token: s.accessToken as string, id: me.id as string };
+  };
+  const pair = async (a: string, b: string) => {
+    const x = await fresh(a);
+    const y = await fresh(b);
+    await call('POST', '/swipes', { targetId: y.id, liked: true }, x.token);
+    const { matchId } = (await call('POST', '/swipes', { targetId: x.id, liked: true }, y.token)).json;
+    return { x, y, matchId: matchId as string };
+  };
+  const song = {
+    kind: 'song', title: 'Dreams', subtitle: 'Fleetwood Mac',
+    artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/a/600x600bb.jpg',
+    previewUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/a.m4a',
+    link: 'https://music.apple.com/us/album/dreams/1',
+  };
+
+  it('saves prompts and a featured song, and shows them on cards', async () => {
+    const a = await fresh('prompt-a@x.com');
+    const prompts = [{ question: 'My ideal Saturday', answer: 'Farmers market, then a long hike' }];
+    expect((await call('PATCH', '/me/profile', { prompts, featured: song }, a.token)).status).toBe(200);
+    const tooMany = Array.from({ length: 4 }, (_, i) => ({ question: `Q${i}`, answer: 'a' }));
+    expect((await call('PATCH', '/me/profile', { prompts: tooMany }, a.token)).status).toBe(400);
+    expect((await call('PATCH', '/me/profile', { featured: { ...song, artworkUrl: 'https://evil.example/pixel.gif' } }, a.token)).status).toBe(400);
+    const me = (await call('GET', '/me', undefined, a.token)).json;
+    expect(me.profile.prompts).toEqual(prompts);
+    expect(me.profile.featured.title).toBe('Dreams');
+
+    const b = await fresh('prompt-b@x.com');
+    const card = (await call('GET', '/discover?limit=50', undefined, b.token)).json.cards.find((c: any) => c.id === a.id);
+    expect(card.prompts).toEqual(prompts);
+    expect(card.featured.subtitle).toBe('Fleetwood Mac');
+    expect((await call('PATCH', '/me/profile', { featured: null }, a.token)).status).toBe(200);
+  });
+
+  it('turns Apple catalog results into safe featured items', async () => {
+    const fake = (async () =>
+      new Response(JSON.stringify({ results: [
+        { trackName: 'Dreams', artistName: 'Fleetwood Mac', artworkUrl100: 'https://is1-ssl.mzstatic.com/x/100x100bb.jpg', previewUrl: song.previewUrl, trackViewUrl: song.link },
+        { trackName: 'Dreams', artistName: 'Fleetwood Mac' },
+        { trackName: 'Bad', artistName: 'X', artworkUrl100: 'http://elsewhere.com/a.jpg' },
+      ] }))) as unknown as typeof fetch;
+    const results = await searchCatalog('song', 'dreams', fake);
+    expect(results).toHaveLength(2);
+    expect(results[0]!.artworkUrl).toBe('https://is1-ssl.mzstatic.com/x/600x600bb.jpg');
+    expect(results[1]!.artworkUrl).toBeNull();
+  });
+
+  it('sends photos and GIFs in chat', async () => {
+    const { x, y, matchId } = await pair('media-a@x.com', 'media-b@x.com');
+    const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 0x4a, 0x46, 0x49, 0x46, 0, 1, 2, 3]);
+    const upload = (body: Uint8Array) =>
+      app.request(`/matches/${matchId}/images?w=1080&h=1350`, { method: 'POST', headers: { authorization: `Bearer ${x.token}` }, body: body.slice().buffer });
+    expect((await upload(new TextEncoder().encode('<svg/>'))).status).toBe(415);
+    const res = await upload(jpeg);
+    expect(res.status).toBe(201);
+    const msg = await res.json();
+    expect(msg.kind).toBe('image');
+    expect(msg.media).toMatchObject({ width: 1080, height: 1350 });
+    const img = await app.request(msg.media.url);
+    expect(img.headers.get('content-type')).toBe('image/jpeg');
+    expect(new Uint8Array(await img.arrayBuffer())).toEqual(jpeg);
+
+    const gif = { url: 'https://media2.giphy.com/media/abc/200w.gif', width: 200, height: 150 };
+    expect((await call('POST', `/matches/${matchId}/messages`, { gif: { ...gif, url: 'https://evil.example/a.gif' } }, x.token)).status).toBe(400);
+    expect((await call('POST', `/matches/${matchId}/messages`, { gif }, y.token)).json.kind).toBe('gif');
+
+    const history = (await call('GET', `/matches/${matchId}/messages`, undefined, y.token)).json.messages;
+    expect(history.map((m: any) => m.kind)).toEqual(['image', 'gif']);
+    const list = (await call('GET', '/matches', undefined, x.token)).json.matches;
+    expect(list.find((m: any) => m.id === matchId).lastMessage.body).toBe('GIF');
+
+    // Unmatching takes the photos down too.
+    await call('DELETE', `/matches/${matchId}`, undefined, x.token);
+    expect((await app.request(msg.media.url)).status).toBe(404);
+  });
+
+  it('works out achievements and shows earned badges to friends', async () => {
+    const { x, y, matchId } = await pair('badge-a@x.com', 'badge-b@x.com');
+    await call('POST', `/matches/${matchId}/messages`, { body: 'hey!' }, x.token);
+    const { achievements } = (await call('GET', '/me/achievements', undefined, x.token)).json;
+    const earned = (id: string) => achievements.find((a: any) => a.id === id);
+    expect(earned('first-click').earnedAt).toBeTruthy();
+    expect(earned('icebreaker').earnedAt).toBeTruthy();
+    expect(earned('verified').earnedAt).toBeTruthy();
+    expect(earned('inner-circle')).toMatchObject({ progress: 1, target: 5, earnedAt: null });
+    const friend = (await call('GET', '/matches', undefined, y.token)).json.matches.find((m: any) => m.id === matchId);
+    expect(friend.person.badges).toEqual(expect.arrayContaining(['first-click', 'icebreaker', 'verified']));
+    expect(friend.person.badges).not.toContain('inner-circle');
+  });
+
+  it('respects activity and location settings', async () => {
+    const { x, y, matchId } = await pair('active-a@x.com', 'active-b@x.com');
+    const seen = async () => (await call('GET', '/matches', undefined, y.token)).json.matches.find((m: any) => m.id === matchId);
+    expect((await seen()).lastActiveAt).toBeTruthy();
+    expect((await call('PATCH', '/me/settings', { showActivity: false, liveLocation: false }, x.token)).status).toBe(204);
+    expect((await seen())).toMatchObject({ online: false, lastActiveAt: null });
+    expect((await call('GET', '/me', undefined, x.token)).json.settings).toMatchObject({ showActivity: false, liveLocation: false });
+  });
+
+  it('knows when someone comes online and goes offline', () => {
+    const hub = new Hub();
+    const a = { send() {} } as any;
+    const b = { send() {} } as any;
+    expect(hub.add('u', a)).toBe(true);
+    expect(hub.add('u', b)).toBe(false);
+    expect(hub.remove('u', a)).toBe(false);
+    expect(hub.remove('u', b)).toBe(true);
+    expect(hub.remove('u', b)).toBe(false);
   });
 });
 

@@ -6,7 +6,7 @@ import { createNodeWebSocket } from '@hono/node-ws';
 import type { WSContext } from 'hono/ws';
 import { config } from './config.js';
 import type { Db } from './db.js';
-import { Hub } from './realtime.js';
+import { Hub, announcePresence } from './realtime.js';
 import { isFamilyActive, verifyAccessToken } from './auth/tokens.js';
 import { authRoutes } from './routes/auth.js';
 import { meRoutes } from './routes/me.js';
@@ -23,7 +23,7 @@ export function createApp(db: Db) {
   // Photos are loaded by <img> from the web app's origin, so they need a cross-origin resource policy.
   const strict = secureHeaders();
   const embeddable = secureHeaders({ crossOriginResourcePolicy: 'cross-origin' });
-  app.use('*', (c, next) => (c.req.path.startsWith('/photos/') ? embeddable : strict)(c, next));
+  app.use('*', (c, next) => (c.req.path.startsWith('/photos/') || c.req.path.startsWith('/media/') ? embeddable : strict)(c, next));
   // requireAuth reads the database from the context to check the session is still active.
   app.use('*', async (c, next) => {
     c.set('db' as never, db as never);
@@ -74,7 +74,7 @@ export function createApp(db: Db) {
               if (!(await isFamilyActive(db, claims.family))) throw new Error('revoked');
               userId = claims.userId;
               clearTimeout(timer);
-              hub.add(userId, ws);
+              if (hub.add(userId, ws)) void announcePresence(db, hub, userId, true).catch(() => {});
               ws.send(JSON.stringify({ type: 'ready' }));
             } catch {
               ws.close(4401, 'invalid token');
@@ -90,7 +90,7 @@ export function createApp(db: Db) {
         },
         onClose(_evt, ws) {
           clearTimeout(timer);
-          if (userId) hub.remove(userId, ws);
+          if (userId && hub.remove(userId, ws)) void announcePresence(db, hub, userId, false).catch(() => {});
         },
       };
     }),

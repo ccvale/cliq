@@ -3,18 +3,21 @@ import { ActivityIndicator, FlatList, Modal, Platform, Pressable, StyleSheet, Te
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInUp, useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import { ArrowLeft, ArrowUp, Ellipsis } from 'lucide-react-native';
+import { ArrowLeft, ArrowUp, Ellipsis, Plus, X } from 'lucide-react-native';
+import { Image } from 'expo-image';
 import { Avatar } from '@/components/Avatar';
 import { MeshGradient } from '@/components/MeshGradient';
-import { ProfileCard } from '@/components/ProfileCard';
+import { GifPicker } from '@/components/GifPicker';
+import { ProfileSheet } from '@/components/ProfileDetails';
 import { Screen } from '@/components/Screen';
 import { Sheet } from '@/components/Sheet';
 import { Txt } from '@/components/Txt';
 import { TypingDots } from '@/components/TypingDots';
-import { api } from '@/lib/api';
+import { api, photoSource } from '@/lib/api';
+import { pickChatImage } from '@/lib/photo';
 import { realtime } from '@/lib/realtime';
-import { clockTime, dayLabel } from '@/lib/time';
-import type { Message } from '@/lib/types';
+import { clockTime, dayLabel, timeAgo } from '@/lib/time';
+import type { Gif, Media, Message } from '@/lib/types';
 import { useMatches } from '@/state/matches';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -39,6 +42,10 @@ export default function Chat() {
   const [confirm, setConfirm] = useState<'unmatch' | 'block' | 'report' | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [attach, setAttach] = useState(false);
+  const [gifs, setGifs] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [viewing, setViewing] = useState<Media | null>(null);
   const typingTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const lastTypingSent = useRef(0);
 
@@ -94,6 +101,33 @@ export default function Chat() {
     }
   };
 
+  const added = (sent: Message) => setMessages((list) => (list?.some((m) => m.id === sent.id) ? list : [...(list ?? []), sent]));
+  const failed = (e: any) => (e.code === 'verify-email' ? router.push('/verify-email') : setError(e.message));
+
+  const sendImage = async (source: 'library' | 'camera') => {
+    setError(null);
+    try {
+      const picked = await pickChatImage(source);
+      if (!picked) return;
+      setSending(true);
+      added(await api.sendImage(id, picked.blob, picked.width, picked.height));
+    } catch (e: any) {
+      failed(e);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const sendGif = async (gif: Gif) => {
+    setGifs(false);
+    setError(null);
+    try {
+      added(await api.sendGif(id, gif));
+    } catch (e: any) {
+      failed(e);
+    }
+  };
+
   const onType = (text: string) => {
     setDraft(text);
     if (Date.now() - lastTypingSent.current > 2500) {
@@ -129,13 +163,19 @@ export default function Chat() {
         </Pressable>
         {person ? (
           <Pressable onPress={() => setShowProfile(true)} style={styles.who} accessibilityLabel={`View ${person.displayName}'s profile`}>
-            <Avatar name={person.displayName} palette={person.palette} photo={person.photoUrl} size={40} />
+            <Avatar name={person.displayName} palette={person.palette} photo={person.photoUrl} size={40} online={match?.online} />
             <View style={{ flex: 1 }}>
               <Txt variant="heading" numberOfLines={1}>
                 {person.displayName}
               </Txt>
-              <Txt variant="caption" tone={typing ? 'accent' : 'muted'} numberOfLines={1}>
-                {typing ? 'typing…' : [person.gigTitle, person.distance].filter(Boolean).join(' · ')}
+              <Txt variant="caption" tone={typing || match?.online ? 'accent' : 'muted'} numberOfLines={1}>
+                {typing
+                  ? 'typing…'
+                  : match?.online
+                    ? 'Online now'
+                    : match?.lastActiveAt
+                      ? `Active ${timeAgo(match.lastActiveAt)}`
+                      : [person.gigTitle, person.distance].filter(Boolean).join(' · ')}
               </Txt>
             </View>
           </Pressable>
@@ -189,9 +229,19 @@ export default function Chat() {
               !mine && !item.last && { borderBottomLeftRadius: 8 },
               !mine && !item.first && { borderTopLeftRadius: 8 },
             ];
+            const media = item.m.media;
             return (
               <Animated.View entering={FadeInUp.duration(250)} style={{ alignItems: mine ? 'flex-end' : 'flex-start', marginTop: item.first ? 10 : 3 }}>
-                {mine ? (
+                {media ? (
+                  <Pressable onPress={() => setViewing(media)} accessibilityLabel={item.m.kind === 'gif' ? 'GIF' : 'Photo'}>
+                    <Image
+                      source={photoSource(media.url)}
+                      style={[styles.media, { aspectRatio: Math.min(2, Math.max(0.5, media.width / media.height)), backgroundColor: colors.bgSunken }]}
+                      contentFit="cover"
+                      transition={200}
+                    />
+                  </Pressable>
+                ) : mine ? (
                   <MeshGradient from={accent.from} to={accent.to} intensity={0.5} style={bubble}>
                     <Txt style={{ color: '#fff' }}>{item.m.body}</Txt>
                   </MeshGradient>
@@ -219,6 +269,14 @@ export default function Chat() {
       ) : null}
 
       <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 10), borderTopColor: colors.line }]}>
+        <Pressable
+          onPress={() => setAttach(true)}
+          disabled={sending}
+          accessibilityLabel="Send a photo or GIF"
+          style={[styles.attach, { backgroundColor: colors.bgRaised, borderColor: colors.line }]}
+        >
+          {sending ? <ActivityIndicator size="small" color={colors.muted} /> : <Plus size={22} color={colors.ink} />}
+        </Pressable>
         <TextInput
           value={draft}
           onChangeText={onType}
@@ -284,12 +342,23 @@ export default function Chat() {
           },
         ]}
       />
-      <Modal visible={showProfile} transparent animationType="fade" onRequestClose={() => setShowProfile(false)}>
-        <Pressable style={styles.profileBackdrop} onPress={() => setShowProfile(false)}>
-          {person ? <ProfileCard card={person} style={{ width: '100%', maxWidth: 380, aspectRatio: 0.7 }} /> : null}
-          <Txt variant="caption" style={{ color: '#fff', marginTop: 16 }}>
-            Tap anywhere to close
-          </Txt>
+      <Sheet
+        visible={attach}
+        onClose={() => setAttach(false)}
+        actions={[
+          { label: 'Photo or GIF from library', onPress: () => void sendImage('library') },
+          ...(Platform.OS !== 'web' ? [{ label: 'Take a photo', onPress: () => void sendImage('camera') }] : []),
+          ...(me?.features?.gifs ? [{ label: 'Search GIFs', onPress: () => setGifs(true) }] : []),
+        ]}
+      />
+      <GifPicker visible={gifs} onPick={sendGif} onClose={() => setGifs(false)} />
+      <ProfileSheet card={showProfile && person ? person : null} onClose={() => setShowProfile(false)} />
+      <Modal visible={!!viewing} transparent animationType="fade" onRequestClose={() => setViewing(null)}>
+        <Pressable style={styles.viewer} onPress={() => setViewing(null)} accessibilityLabel="Close photo">
+          {viewing ? <Image source={photoSource(viewing.url)} style={{ width: '100%', height: '100%' }} contentFit="contain" /> : null}
+          <View style={[styles.viewerClose, { top: insets.top + 12 }]}>
+            <X size={22} color="#fff" />
+          </View>
         </Pressable>
       </Modal>
     </Screen>
@@ -322,5 +391,8 @@ const styles = StyleSheet.create({
     outlineStyle: 'none',
   } as any,
   send: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  profileBackdrop: { flex: 1, backgroundColor: 'rgba(8,7,10,0.7)', alignItems: 'center', justifyContent: 'center', padding: 24 },
+  media: { width: 240, maxWidth: '100%', borderRadius: 20 },
+  attach: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: StyleSheet.hairlineWidth },
+  viewer: { flex: 1, backgroundColor: 'rgba(8,7,10,0.94)', alignItems: 'center', justifyContent: 'center', padding: 12 },
+  viewerClose: { position: 'absolute', right: 16, width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.15)' },
 });

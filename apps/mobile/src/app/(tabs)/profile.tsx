@@ -1,15 +1,20 @@
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { PenLine, Settings } from 'lucide-react-native';
+import { Lock, PenLine, Settings } from 'lucide-react-native';
 import { Button } from '@/components/Button';
+import { MeshGradient } from '@/components/MeshGradient';
 import { ProfileCard } from '@/components/ProfileCard';
+import { ProfileDetails } from '@/components/ProfileDetails';
 import { Screen } from '@/components/Screen';
 import { Txt } from '@/components/Txt';
+import { api } from '@/lib/api';
+import { achievement } from '@/lib/achievements';
+import type { Achievement, Card } from '@/lib/types';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/ThemeProvider';
-import { WIDE } from '@/theme/tokens';
+import { radius, WIDE } from '@/theme/tokens';
 
 function Stat({ value, label }: { value: number | string; label: string }) {
   return (
@@ -22,16 +27,70 @@ function Stat({ value, label }: { value: number | string; label: string }) {
   );
 }
 
+function AchievementTile({ a }: { a: Achievement }) {
+  const { colors, accent } = useTheme();
+  const Icon = achievement(a.id)?.icon ?? Lock;
+  const earned = !!a.earnedAt;
+  return (
+    <View style={[styles.tile, { backgroundColor: colors.bgRaised, borderColor: colors.line }]} accessibilityLabel={`${a.title}${earned ? ', earned' : `, ${a.progress} of ${a.target}`}`}>
+      {earned ? (
+        <MeshGradient from={accent.from} to={accent.to} style={styles.medal}>
+          <Icon size={20} color="#fff" strokeWidth={2.2} />
+        </MeshGradient>
+      ) : (
+        <View style={[styles.medal, { backgroundColor: colors.bgSunken }]}>
+          <Icon size={20} color={colors.muted} strokeWidth={2.2} />
+        </View>
+      )}
+      <Txt variant="label" center numberOfLines={1}>
+        {a.title}
+      </Txt>
+      <Txt variant="caption" tone="muted" center numberOfLines={2} style={{ minHeight: 32, maxWidth: 150 }}>
+        {a.description}
+      </Txt>
+      {earned ? null : (
+        <View style={[styles.track, { backgroundColor: colors.bgSunken }]}>
+          <View style={{ width: `${Math.round((a.progress / a.target) * 100)}%`, height: '100%', borderRadius: 3, backgroundColor: accent.solid }} />
+        </View>
+      )}
+    </View>
+  );
+}
+
 export default function Profile() {
   const { me, reload } = useSession();
-  // Stats change as you swipe, so refresh them whenever this tab comes into view.
-  useFocusEffect(useCallback(() => void reload().catch(() => {}), [reload]));
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  // Stats and achievements change as you swipe and chat, so refresh them whenever this tab comes into view.
+  useFocusEffect(
+    useCallback(() => {
+      void reload().catch(() => {});
+      void api.achievements().then((r) => setAchievements(r.achievements)).catch(() => {});
+    }, [reload]),
+  );
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   if (!me) return null;
   const p = me.profile;
   const cardWidth = Math.min(width - 40, 380);
   const yesRate = me.stats.swipes ? `${Math.round((me.stats.likesSent / me.stats.swipes) * 100)}%` : '—';
+  const earned = achievements.filter((a) => a.earnedAt).sort((a, b) => b.earnedAt!.localeCompare(a.earnedAt!));
+  const card: Card = {
+    id: me.id,
+    displayName: p.displayName,
+    age: p.age ?? 0,
+    bio: p.bio,
+    gigTitle: p.gigTitle,
+    gigPlace: p.gigPlace,
+    interests: p.interests,
+    sharedInterests: [],
+    palette: p.palette,
+    city: p.city,
+    distance: 'This is you',
+    photoUrl: p.photoUrl,
+    prompts: p.prompts,
+    featured: p.featured,
+    badges: earned.map((a) => a.id),
+  };
 
   return (
     <Screen scroll maxWidth={560}>
@@ -48,23 +107,7 @@ export default function Profile() {
       </View>
 
       <Animated.View entering={FadeInDown.duration(500)} style={{ alignItems: 'center', gap: 8 }}>
-        <ProfileCard
-          card={{
-            id: me.id,
-            displayName: p.displayName,
-            age: p.age ?? 0,
-            bio: p.bio,
-            gigTitle: p.gigTitle,
-            gigPlace: p.gigPlace,
-            interests: p.interests,
-            sharedInterests: [],
-            palette: p.palette,
-            city: p.city,
-            distance: 'This is you',
-            photoUrl: p.photoUrl,
-          }}
-          style={{ width: cardWidth, height: cardWidth * 1.35 }}
-        />
+        <ProfileCard card={card} style={{ width: cardWidth, height: cardWidth * 1.35 }} />
         <Txt variant="caption" tone="muted" style={{ marginTop: 6 }}>
           This is how others see your card
         </Txt>
@@ -78,9 +121,43 @@ export default function Profile() {
         <Stat value={me.stats.matches} label="Friends" />
       </Animated.View>
 
-      <Animated.View entering={FadeInDown.delay(200).duration(500)} style={{ gap: 10, paddingBottom: width >= WIDE ? 32 : 120 }}>
+      <Animated.View entering={FadeInDown.delay(200).duration(500)} style={{ gap: 10 }}>
         <Button label="Edit profile" icon={<PenLine size={18} color={colors.bg} />} onPress={() => router.push('/edit-profile')} />
       </Animated.View>
+
+      {p.prompts.length || p.featured ? (
+        <View style={{ marginTop: 28 }}>
+          <ProfileDetails card={{ ...card, badges: [], interests: [] }} />
+        </View>
+      ) : (
+        <Pressable onPress={() => router.push('/edit-profile')} style={[styles.nudge, { borderColor: colors.lineStrong }]}>
+          <Txt variant="heading">Say a bit more</Txt>
+          <Txt tone="muted">Answer a prompt or pick your song, show or movie. They show up when people open your profile.</Txt>
+        </Pressable>
+      )}
+
+      {achievements.length ? (
+        <View style={{ marginTop: 28, gap: 12, paddingBottom: width >= WIDE ? 32 : 120 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginHorizontal: 4 }}>
+            <Txt variant="eyebrow" tone="muted">
+              Achievements
+            </Txt>
+            <Txt variant="caption" tone="muted">
+              {earned.length} of {achievements.length}
+            </Txt>
+          </View>
+          <View style={styles.grid}>
+            {[...earned, ...achievements.filter((a) => !a.earnedAt)].map((a) => (
+              <AchievementTile key={a.id} a={a} />
+            ))}
+          </View>
+          <Txt variant="caption" tone="muted" style={{ marginHorizontal: 4 }}>
+            Badges you earn show on your card for friends to see.
+          </Txt>
+        </View>
+      ) : (
+        <View style={{ height: width >= WIDE ? 32 : 120 }} />
+      )}
     </Screen>
   );
 }
@@ -90,4 +167,9 @@ const styles = StyleSheet.create({
   iconButton: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', borderWidth: StyleSheet.hairlineWidth },
   stats: { flexDirection: 'row', alignItems: 'center', borderRadius: 24, paddingVertical: 18, marginVertical: 20, borderWidth: StyleSheet.hairlineWidth },
   divider: { width: StyleSheet.hairlineWidth, height: 32 },
+  nudge: { marginTop: 28, padding: 18, gap: 6, borderRadius: radius.lg, borderWidth: 1, borderStyle: 'dashed' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  tile: { width: '48.5%', alignItems: 'center', gap: 6, padding: 14, borderRadius: radius.lg, borderWidth: StyleSheet.hairlineWidth },
+  medal: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
+  track: { width: '80%', height: 5, borderRadius: 3, overflow: 'hidden', marginTop: 2 },
 });

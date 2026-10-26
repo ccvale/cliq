@@ -2,6 +2,7 @@ import { View } from 'react-native';
 import { Image } from 'expo-image';
 import { photoSource } from '@/lib/api';
 import { PALETTE, type PaletteId } from '@/lib/catalog';
+import { useTheme } from '@/theme/ThemeProvider';
 import { font } from '@/theme/tokens';
 import { MeshGradient } from './MeshGradient';
 import { Txt } from './Txt';
@@ -13,9 +14,10 @@ export function paletteTones(palette: [string, string]) {
   };
 }
 
-type Props = { name: string; palette: [string, string]; photo?: string | null; size?: number; ring?: string };
+type Props = { name: string; palette: [string, string]; photo?: string | null; size?: number; ring?: string; online?: boolean };
 
-export function Avatar({ name, palette, photo, size = 48, ring }: Props) {
+export function Avatar({ name, palette, photo, size = 48, ring, online }: Props) {
+  const { colors } = useTheme();
   const source = photoSource(photo);
   const tones = paletteTones(palette);
   return (
@@ -47,6 +49,22 @@ export function Avatar({ name, palette, photo, size = 48, ring }: Props) {
           </Txt>
         )}
       </MeshGradient>
+      {online ? (
+        <View
+          accessibilityLabel="Online"
+          style={{
+            position: 'absolute',
+            right: ring ? 2 : 0,
+            bottom: ring ? 2 : 0,
+            width: Math.max(12, size * 0.26),
+            height: Math.max(12, size * 0.26),
+            borderRadius: size,
+            backgroundColor: colors.success,
+            borderWidth: 2.5,
+            borderColor: colors.bg,
+          }}
+        />
+      ) : null}
     </View>
   );
 }

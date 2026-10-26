@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Platform, Share, StyleSheet, Switch, View } from 'react-native';
 import { router } from 'expo-router';
-import { Bell, Download, Fingerprint, KeyRound, LogOut, MessageCircle, MonitorSmartphone, Moon, ShieldCheck, ShieldOff } from 'lucide-react-native';
+import { Bell, CircleDot, Download, Fingerprint, KeyRound, LocateFixed, LogOut, MessageCircle, MonitorSmartphone, Moon, ShieldCheck, ShieldOff } from 'lucide-react-native';
 import { LinkRow } from '@/components/LinkRow';
 import { Segmented } from '@/components/Segmented';
 import { Button } from '@/components/Button';
@@ -37,9 +37,9 @@ export default function SettingsScreen() {
   const snoozeChoice = !snoozed ? 'off' : new Date(settings.snoozedUntil!).getTime() - Date.now() > 400 * 86_400_000 ? 'off-forever' : 'on';
   const [snoozePick, setSnoozePick] = useState<'0' | '1' | '7' | '3650'>(snoozeChoice === 'off' ? '0' : snoozeChoice === 'off-forever' ? '3650' : '7');
 
-  const saveSettings = async (patch: { notifyMatches?: boolean; notifyMessages?: boolean; snoozeDays?: number }) => {
+  const saveSettings = async (patch: { notifyMatches?: boolean; notifyMessages?: boolean; liveLocation?: boolean; showActivity?: boolean; snoozeDays?: number }) => {
     const before = settings;
-    if (patch.notifyMatches !== undefined || patch.notifyMessages !== undefined) setSettings((s) => ({ ...s, ...patch }));
+    if (patch.snoozeDays === undefined) setSettings((s) => ({ ...s, ...patch }));
     try {
       await api.updateSettings(patch);
       if (patch.snoozeDays !== undefined) {
@@ -201,6 +201,30 @@ export default function SettingsScreen() {
       </Section>
 
       <Section title="Privacy and security">
+        <View style={styles.rowBetween}>
+          <View style={styles.rowIcon}>
+            <CircleDot size={20} color={colors.ink} />
+            <View style={{ flexShrink: 1 }}>
+              <Txt variant="label">Show when I’m active</Txt>
+              <Txt variant="caption" tone="muted">
+                Friends see “Online now” or when you were last on
+              </Txt>
+            </View>
+          </View>
+          <Switch value={settings.showActivity} onValueChange={(v) => saveSettings({ showActivity: v })} trackColor={{ true: accent.solid, false: colors.bgSunken }} />
+        </View>
+        <View style={styles.rowBetween}>
+          <View style={styles.rowIcon}>
+            <LocateFixed size={20} color={colors.ink} />
+            <View style={{ flexShrink: 1 }}>
+              <Txt variant="label">Use where I am now</Txt>
+              <Txt variant="caption" tone="muted">
+                Distances follow you when you open Cliq. Off keeps your home spot
+              </Txt>
+            </View>
+          </View>
+          <Switch value={settings.liveLocation} onValueChange={(v) => saveSettings({ liveLocation: v })} trackColor={{ true: accent.solid, false: colors.bgSunken }} />
+        </View>
         <LinkRow
           icon={<ShieldCheck size={20} color={colors.ink} />}
           label="Two-step verification"

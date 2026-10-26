@@ -24,3 +24,5 @@ services:
         value: fi.cliq.app
       - key: GOOGLE_AUDIENCES
         sync: false
+      - key: GIPHY_API_KEY
+        sync: false

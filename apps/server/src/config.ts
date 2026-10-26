@@ -22,6 +22,7 @@ export const config = {
   // In development, also accept tokens minted for Expo Go (host.exp.Exponent) so Sign in with Apple works there.
   appleAudiences: env.APPLE_AUDIENCES ? list(env.APPLE_AUDIENCES) : isProd ? [] : ['fi.cliq.app', 'host.exp.Exponent'],
   googleAudiences: list(env.GOOGLE_AUDIENCES),
+  giphyApiKey: env.GIPHY_API_KEY || undefined,
   smtpUrl: env.SMTP_URL || undefined,
   mailFrom: env.MAIL_FROM ?? 'Cliq <hello@cliq.fi>',
   // Set when the API sits behind exactly one reverse proxy (Render, Fly, Railway) that appends the client IP

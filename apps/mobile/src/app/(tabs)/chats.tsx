@@ -21,7 +21,7 @@ function NewFriend({ m, index }: { m: MatchSummary; index: number }) {
   return (
     <Animated.View entering={FadeInDown.delay(index * 60)}>
       <Pressable onPress={() => open(m.id)} style={{ alignItems: 'center', gap: 8, width: 76 }} accessibilityLabel={`Say hi to ${m.person.displayName}`}>
-        <Avatar name={m.person.displayName} palette={m.person.palette} photo={m.person.photoUrl} size={64} ring={accent.solid} />
+        <Avatar name={m.person.displayName} palette={m.person.palette} photo={m.person.photoUrl} size={64} ring={accent.solid} online={m.online} />
         <Txt variant="label" numberOfLines={1}>
           {m.person.displayName}
         </Txt>
@@ -39,7 +39,7 @@ function Row({ m }: { m: MatchSummary }) {
       style={({ pressed }) => [styles.row, { backgroundColor: pressed ? colors.bgSunken : 'transparent' }]}
       accessibilityLabel={`${m.person.displayName}${unread ? `, ${m.unread} unread` : ''}`}
     >
-      <Avatar name={m.person.displayName} palette={m.person.palette} photo={m.person.photoUrl} size={56} />
+      <Avatar name={m.person.displayName} palette={m.person.palette} photo={m.person.photoUrl} size={56} online={m.online} />
       <View style={{ flex: 1, gap: 3 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
           <Txt variant="heading" numberOfLines={1} style={{ flexShrink: 1 }}>

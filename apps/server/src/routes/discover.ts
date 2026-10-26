@@ -9,6 +9,8 @@ import { ageBand, ageOn } from '../lib/age.js';
 import { distanceLabel, distanceMiles } from '../lib/geo.js';
 import { score } from '../lib/scoring.js';
 import { sendPush, type Hub } from '../realtime.js';
+import { badgesFor } from '../lib/achievements.js';
+import type { Featured } from '../lib/featured.js';
 
 export type CardDto = {
   id: string;
@@ -23,6 +25,9 @@ export type CardDto = {
   city: string;
   distance: string;
   photoUrl: string | null;
+  prompts: { question: string; answer: string }[];
+  featured: Featured | null;
+  badges: string[];
 };
 
 export function discoverRoutes(db: Db, hub: Hub) {
@@ -83,7 +88,9 @@ export function discoverRoutes(db: Db, hub: Hub) {
       });
     }
     scored.sort((a, b) => b.score - a.score);
-    return c.json({ cards: scored.slice(0, c.req.valid('query').limit).map((s) => s.card) });
+    const cards = scored.slice(0, c.req.valid('query').limit).map((s) => s.card);
+    const badges = await badgesFor(db, cards.map((card) => card.id));
+    return c.json({ cards: cards.map((card) => ({ ...card, badges: badges(card.id) })) });
   });
 
   r.post('/swipes', swipeLimit, zValidator('json', z.object({ targetId: z.string().uuid(), liked: z.boolean() })), async (c) => {
@@ -163,5 +170,8 @@ export function toCard(p: Row, age: number, miles: number, shared: string[]): Ca
     city: p.city,
     distance: distanceLabel(miles),
     photoUrl: photoUrl(p.user_id, p.photo_at),
+    prompts: (p.prompts as CardDto['prompts'] | undefined) ?? [],
+    featured: (p.featured as Featured | null | undefined) ?? null,
+    badges: [],
   };
 }

@@ -6,7 +6,9 @@ import { Avatar } from '@/components/Avatar';
 import { pickPhoto } from '@/lib/photo';
 import { Button } from '@/components/Button';
 import { Field } from '@/components/Field';
+import { FeaturedPicker } from '@/components/FeaturedPicker';
 import { InterestPicker } from '@/components/InterestPicker';
+import { PromptEditor } from '@/components/PromptEditor';
 import { PalettePicker } from '@/components/PalettePicker';
 import { Screen } from '@/components/Screen';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -15,7 +17,7 @@ import { Txt } from '@/components/Txt';
 import { api } from '@/lib/api';
 import { MAX_INTERESTS } from '@/lib/catalog';
 import { locateMe, type Place } from '@/lib/location';
-import type { Palette, ProfilePatch } from '@/lib/types';
+import type { Featured, Palette, Prompt, ProfilePatch } from '@/lib/types';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -30,6 +32,8 @@ export default function EditProfile() {
   const [interests, setInterests] = useState(p.interests);
   const [palette, setPalette] = useState<Palette>(p.palette);
   const [city, setCity] = useState(p.city);
+  const [prompts, setPrompts] = useState<Prompt[]>(p.prompts);
+  const [featured, setFeatured] = useState<Featured | null>(p.featured);
   const [place, setPlace] = useState<Place | null>(null);
   const [busy, setBusy] = useState(false);
   const [locating, setLocating] = useState(false);
@@ -62,7 +66,9 @@ export default function EditProfile() {
     setBusy(true);
     setError(null);
     try {
-      const patch: ProfilePatch = { displayName, bio, gigTitle, gigPlace, interests, palette };
+      // Prompts left without an answer are dropped rather than blocking the save.
+      const answered = prompts.map((x) => ({ ...x, answer: x.answer.trim() })).filter((x) => x.answer);
+      const patch: ProfilePatch = { displayName, bio, gigTitle, gigPlace, interests, palette, prompts: answered, featured };
       if (place) patch.location = { ...place, city };
       setProfile(await api.updateProfile(patch));
       router.back();
@@ -146,6 +152,14 @@ export default function EditProfile() {
         <Field label="Bio" value={bio} onChangeText={setBio} multiline counter={300} maxLength={300} placeholder="What kind of friends are you hoping to find?" />
       </Section>
 
+      <Section title={`Prompts · ${prompts.length}/3`} footer="Short answers people see when they open your profile.">
+        <PromptEditor value={prompts} onChange={setPrompts} />
+      </Section>
+
+      <Section title="Song, show or movie" footer="Feature one thing you love. Songs come with a 30 second preview.">
+        <FeaturedPicker value={featured} onChange={setFeatured} palette={palette} />
+      </Section>
+
       <Section title="Current gig">
         <Field label="Title" value={gigTitle} onChangeText={setGigTitle} maxLength={60} placeholder="Student, barista, designer…" />
         <Field label="Where" value={gigPlace} onChangeText={setGigPlace} maxLength={60} placeholder="Ramapo College" />
@@ -159,7 +173,7 @@ export default function EditProfile() {
         <PalettePicker value={palette} onChange={setPalette} />
       </Section>
 
-      <Section title="Location" footer="Stored to the nearest kilometre. Others only ever see a distance in miles.">
+      <Section title="Location" footer={me!.settings.liveLocation ? "Follows you when you open Cliq (you can turn that off in Settings). Stored to the nearest kilometre; others only see miles." : "Stored to the nearest kilometre. Others only ever see a distance in miles."}>
         <Field label="Shown as" value={city} onChangeText={setCity} maxLength={80} />
         <Button
           label={place ? 'Updated to where you are' : 'Update to my current location'}

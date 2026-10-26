@@ -6,6 +6,7 @@ import { RotateCcw, SlidersHorizontal, Sparkles, X } from 'lucide-react-native';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
 import { MeshGradient } from '@/components/MeshGradient';
+import { ProfileSheet } from '@/components/ProfileDetails';
 import { Screen } from '@/components/Screen';
 import { SwipeDeck, type DeckHandle } from '@/components/SwipeDeck';
 import { Txt } from '@/components/Txt';
@@ -33,6 +34,7 @@ export default function Discover() {
   const [stats, setStats] = useState({ yes: 0, no: 0 });
   // The last card you swiped, for undo. Cleared once it can't be undone (it made a match).
   const [last, setLast] = useState<{ card: Card; liked: boolean } | null>(null);
+  const [open, setOpen] = useState<Card | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -136,7 +138,7 @@ export default function Discover() {
           />
         ) : cardHeight > 0 ? (
           <Animated.View entering={FadeIn.duration(400)} style={{ alignItems: 'center' }}>
-            <SwipeDeck ref={deck} cards={cards} width={cardWidth} height={cardHeight} onSwiped={onSwiped} />
+            <SwipeDeck ref={deck} cards={cards} width={cardWidth} height={cardHeight} onSwiped={onSwiped} onOpen={setOpen} />
             <Animated.View entering={FadeInDown.delay(200)} style={styles.actions}>
               <Pressable
                 onPress={undo}
@@ -175,6 +177,7 @@ export default function Discover() {
           </Animated.View>
         ) : null}
       </View>
+      <ProfileSheet card={open} onClose={() => setOpen(null)} />
     </Screen>
   );
 }
